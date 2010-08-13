@@ -457,15 +457,6 @@ config MMC_S3C_DMA
 	  working properly and needs to be debugged before this
 	  option is useful.
 
-config MMC_S3C_PIODMA
-	bool "Support for both PIO and DMA"
-	help
-	  Compile both the PIO and DMA transfer routines into the
-	  driver and let the platform select at run-time which one
-	  is best.
-
-	  See notes for the DMA option.
-
 endchoice
 
 config MMC_SDRICOH_CS

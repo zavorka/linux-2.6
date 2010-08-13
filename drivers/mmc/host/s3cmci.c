@@ -1184,6 +1184,8 @@ static int s3cmci_prepare_dma(struct s3cmci_host *host, struct mmc_data *data)
 		    sg_dma_address(&data->sg[i]),
 		    sg_dma_len(&data->sg[i]));
 
+		/* Restore prescaler value */
+		writel(host->prescaler, host->base + S3C2410_SDIPRE);
 		res = s3c2410_dma_enqueue(host->dma, host,
 					  sg_dma_address(&data->sg[i]),
 					  sg_dma_len(&data->sg[i]));
@@ -1193,8 +1195,6 @@ static int s3cmci_prepare_dma(struct s3cmci_host *host, struct mmc_data *data)
 			return -EBUSY;
 		}
 	}
-
-	s3c2410_dma_ctrl(host->dma, S3C2410_DMAOP_START);
 
 	return 0;
 }

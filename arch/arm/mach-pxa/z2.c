@@ -166,6 +166,10 @@ static struct mtd_partition z2_flash_parts[] = {
 	}, {
 		.name	= "Flash",
 		.offset	= 0x60000,
+		.size	= 0x780000,
+	}, {
+		.name	= "U-Boot Logo",
+		.offset = 0x7e0000,
 		.size	= MTDPART_SIZ_FULL,
 	},
 };

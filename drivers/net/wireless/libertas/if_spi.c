@@ -1195,6 +1195,7 @@ static int __devexit libertas_spi_remove(struct spi_device *spi)
 	lbs_remove_card(priv); /* will call free_netdev */
 
 	free_irq(spi->irq, card);
+	cancel_work_sync(&card->packet_work);
 	flush_workqueue(card->workqueue);
 	destroy_workqueue(card->workqueue);
 	if (card->pdata->teardown)

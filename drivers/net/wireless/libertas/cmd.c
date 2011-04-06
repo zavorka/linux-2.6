@@ -84,6 +84,7 @@ static u8 is_command_allowed_in_ps(u16 cmd)
 int lbs_update_hw_spec(struct lbs_private *priv)
 {
 	struct cmd_ds_get_hw_spec cmd;
+	struct cmd_ds_802_11_mac_address hw_addr_cmd;
 	int ret = -1;
 	u32 i;
 
@@ -151,7 +152,19 @@ int lbs_update_hw_spec(struct lbs_private *priv)
 			memcpy(priv->mesh_dev->dev_addr,
 				priv->current_addr, ETH_ALEN);
 		priv->copied_hwaddr = 1;
+	} else {
+		/* Copy addr back to hw */
+		memcpy(priv->current_addr, priv->dev->dev_addr, ETH_ALEN);
+		hw_addr_cmd.hdr.size = cpu_to_le16(sizeof(hw_addr_cmd));
+		hw_addr_cmd.action = cpu_to_le16(CMD_ACT_SET);
+		memcpy(hw_addr_cmd.macadd, priv->current_addr, ETH_ALEN);
+
+		ret = lbs_cmd_with_response(priv, CMD_802_11_MAC_ADDRESS,
+			&hw_addr_cmd);
+		if (ret)
+			lbs_deb_net("set MAC address failed\n");
 	}
+
 
 out:
 	lbs_deb_leave(LBS_DEB_CMD);
@@ -1111,6 +1124,7 @@ out:
 
 void lbs_set_mac_control(struct lbs_private *priv)
 {
+	int ret;
 	struct cmd_ds_mac_control cmd;
 
 	lbs_deb_enter(LBS_DEB_CMD);
@@ -1119,7 +1133,9 @@ void lbs_set_mac_control(struct lbs_private *priv)
 	cmd.action = cpu_to_le16(priv->mac_control);
 	cmd.reserved = 0;
 
-	lbs_cmd_async(priv, CMD_MAC_CONTROL, &cmd.hdr, sizeof(cmd));
+	ret = lbs_cmd_with_response(priv, CMD_MAC_CONTROL, &cmd);
+	if (ret)
+		lbs_deb_net("set MAC control failed\n");
 
 	lbs_deb_leave(LBS_DEB_CMD);
 }

@@ -90,12 +90,13 @@ struct lbs_private {
 	void *card;
 	u8 fw_ready;
 	u8 surpriseremoved;
-	u8 setup_fw_on_resume;
+	int power_on_cnt;
 	int (*hw_host_to_card) (struct lbs_private *priv, u8 type, u8 *payload, u16 nb);
 	void (*reset_card) (struct lbs_private *priv);
 	int (*enter_deep_sleep) (struct lbs_private *priv);
 	int (*exit_deep_sleep) (struct lbs_private *priv);
 	int (*reset_deep_sleep_wakeup) (struct lbs_private *priv);
+	void (*set_power) (struct lbs_private *priv, int enable);
 
 	/* Adapter info (from EEPROM) */
 	u32 fwrelease;

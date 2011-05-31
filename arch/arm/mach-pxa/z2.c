@@ -41,6 +41,9 @@
 #include <mach/mmc.h>
 #include <plat/pxa27x_keypad.h>
 #include <mach/pm.h>
+#include <mach/pxa27x-udc.h>
+#include <mach/udc.h>
+#include <mach/ohci.h>
 
 #include "generic.h"
 #include "devices.h"
@@ -682,6 +685,52 @@ static void __init z2_pmic_init(void)
 static inline void z2_pmic_init(void) {}
 #endif
 
+/******************************************************************************
+ * USB Switch
+ ******************************************************************************/
+static struct platform_device z2_usb_switch = {
+	.name		= "z2-usb-switch",
+	.id		= -1,
+};
+
+static void __init z2_usb_switch_init(void)
+{
+	platform_device_register(&z2_usb_switch);
+}
+
+/******************************************************************************
+ * USB Gadget
+ ******************************************************************************/
+#if defined(CONFIG_USB_GADGET_PXA27X) \
+	|| defined(CONFIG_USB_GADGET_PXA27X_MODULE)
+static int z2_udc_is_connected(void)
+{
+	return 1;
+}
+
+static struct pxa2xx_udc_mach_info z2_udc_info __initdata = {
+	.udc_is_connected	= z2_udc_is_connected,
+	.gpio_pullup		= -1,
+};
+
+static void __init z2_udc_init(void)
+{
+	pxa_set_udc_info(&z2_udc_info);
+}
+#else
+static inline void z2_udc_init(void) {}
+#endif
+
+/******************************************************************************
+ * USB Host (OHCI)
+ ******************************************************************************/
+static struct pxaohci_platform_data z2_ohci_platform_data = {
+	.port_mode	= PMM_PERPORT_MODE,
+	.flags		= ENABLE_PORT2 | NO_OC_PROTECTION,
+	.power_on_delay	= 10,
+	.power_budget	= 500,
+};
+
 #ifdef CONFIG_PM
 static void z2_power_off(void)
 {
@@ -703,10 +752,12 @@ static void __init z2_init(void)
 	pxa_set_ffuart_info(NULL);
 	pxa_set_btuart_info(NULL);
 	pxa_set_stuart_info(NULL);
+	pxa_set_ohci_info(&z2_ohci_platform_data);
 
 	z2_lcd_init();
 	z2_mmc_init();
 	z2_mkp_init();
+	z2_udc_init();
 	z2_i2c_init();
 	z2_spi_init();
 	z2_nor_init();
@@ -714,6 +765,7 @@ static void __init z2_init(void)
 	z2_leds_init();
 	z2_keys_init();
 	z2_pmic_init();
+	z2_usb_switch_init();
 
 	pm_power_off = z2_power_off;
 }

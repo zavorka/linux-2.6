@@ -275,7 +275,8 @@ apm_ioctl(struct file *filp, u_int cmd, u_long arg)
 	if (!as->suser || !as->writer)
 		return -EPERM;
 
-	mutex_lock(&apm_mutex);
+	while (mutex_lock_interruptible(&apm_mutex) < 0)
+		try_to_freeze();
 	switch (cmd) {
 	case APM_IOC_SUSPEND:
 		mutex_lock(&state_lock);

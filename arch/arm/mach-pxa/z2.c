@@ -361,7 +361,7 @@ static unsigned int z2_matrix_keys[] = {
 	KEY(5, 0, KEY_END),
 	KEY(6, 0, KEY_KPPLUS),
 
-	KEY(0, 1, KEY_HOME),
+	KEY(0, 1, KEY_SYSRQ),
 	KEY(1, 1, KEY_Q),
 	KEY(2, 1, KEY_I),
 	KEY(3, 1, KEY_G),

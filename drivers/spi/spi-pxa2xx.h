@@ -40,6 +40,7 @@ struct driver_data {
 	int rx_channel;
 	int tx_channel;
 	u32 *null_dma_buf;
+	u8 null_dma_buf_unaligned[16];
 
 	/* SSP register addresses */
 	void __iomem *ioaddr;

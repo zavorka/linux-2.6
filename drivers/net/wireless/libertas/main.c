@@ -693,7 +693,7 @@ done:
 
 int lbs_suspend(struct lbs_private *priv)
 {
-	int ret;
+	int ret = 0;
 
 	lbs_deb_enter(LBS_DEB_FW);
 
@@ -707,7 +707,13 @@ int lbs_suspend(struct lbs_private *priv)
 		priv->deep_sleep_required = 1;
 	}
 
-	ret = lbs_set_host_sleep(priv, 1);
+	if (priv->disable_on_suspend) {
+		/* Disable card */
+		priv->suspend_iface_status = priv->iface_running;
+		if (priv->iface_running)
+			lbs_stop_iface(priv);
+	} else
+		ret = lbs_set_host_sleep(priv, 1);
 
 	netif_device_detach(priv->dev);
 	if (priv->mesh_dev)
@@ -720,11 +726,16 @@ EXPORT_SYMBOL_GPL(lbs_suspend);
 
 int lbs_resume(struct lbs_private *priv)
 {
-	int ret;
+	int ret = 0;
 
 	lbs_deb_enter(LBS_DEB_FW);
 
-	ret = lbs_set_host_sleep(priv, 0);
+	if (priv->disable_on_suspend) {
+		/* Enable card */
+		if (priv->suspend_iface_status)
+			lbs_start_iface(priv);
+	} else
+		ret = lbs_set_host_sleep(priv, 0);
 
 	netif_device_attach(priv->dev);
 	if (priv->mesh_dev)
@@ -737,9 +748,6 @@ int lbs_resume(struct lbs_private *priv)
 			netdev_err(priv->dev,
 				   "deep sleep activation failed: %d\n", ret);
 	}
-
-	if (priv->setup_fw_on_resume)
-		ret = lbs_setup_firmware(priv);
 
 	lbs_deb_leave_args(LBS_DEB_FW, "ret %d", ret);
 	return ret;

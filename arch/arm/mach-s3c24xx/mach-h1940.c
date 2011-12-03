@@ -218,9 +218,9 @@ static struct s3c2410fb_mach_info h1940_fb_info __initdata = {
 	.gpcup =	0x0000ffff,
 	.gpcup_mask =	0xffffffff,
 	.gpdcon =	0xaa84aaa0,
-	.gpdcon_mask =	0xffffffff,
+	.gpdcon_mask =	0xfffffff3,
 	.gpdup =	0x0000faff,
-	.gpdup_mask =	0xffffffff,
+	.gpdup_mask =	0xfffffffd,
 };
 
 static int power_supply_init(struct device *dev)
@@ -732,6 +732,19 @@ static void __init h1940_init(void)
 	gpio_direction_output(S3C2410_GPA(3), 0);
 	gpio_direction_output(S3C2410_GPA(7), 0);
 	gpio_direction_output(H1940_LATCH_LED_FLASH, 0);
+
+	gpio_request(S3C2410_GPD(1), "Reset sense");
+	gpio_request(S3C2410_GPA(14), "Reset reset");
+	gpio_request(S3C2410_GPB(6), "Reset lock");
+	gpio_direction_input(S3C2410_GPD(1));
+	gpio_direction_output(S3C2410_GPA(14), 0);
+	if (gpio_get_value(S3C2410_GPD(1)))
+		gpio_set_value(S3C2410_GPA(14), 0);
+
+	gpio_direction_output(S3C2410_GPA(14), 1);
+	mdelay(100);
+	gpio_direction_output(S3C2410_GPB(6), 1);
+	gpio_direction_output(S3C2410_GPB(6), 0);
 
 	i2c_register_board_info(0, h1940_i2c_devices,
 		ARRAY_SIZE(h1940_i2c_devices));

@@ -32,6 +32,7 @@
 #include <linux/pda_power.h>
 #include <linux/s3c_adc_battery.h>
 #include <linux/delay.h>
+#include <linux/property.h>
 
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
@@ -40,6 +41,8 @@
 
 #include <linux/mmc/host.h>
 #include <linux/export.h>
+
+#include <linux/gpio/machine.h>
 
 #include <asm/irq.h>
 #include <asm/mach-types.h>
@@ -726,6 +729,25 @@ static struct platform_device h1940_dev_buttons = {
 	}
 };
 
+static struct property_entry __initdata h1940_bt_rfkill_prop[] = {
+	PROPERTY_ENTRY_STRING("name", "h1940-bt"),
+	PROPERTY_ENTRY_STRING("type", "bluetooth"),
+	{ },
+};
+
+static struct platform_device h1940_bluetooth = {
+	.name		= "rfkill_gpio",
+	.id		= 0,
+};
+
+static struct gpiod_lookup_table bt_gpio_lookup = {
+	.dev_id = "h1940-bt",
+	.table = {
+		GPIO_LOOKUP_IDX("H1940_LATCH", 13, NULL, 0, 0),
+		{ },
+	},
+};
+
 static struct platform_device *h1940_devices[] __initdata = {
 	&h1940_dev_buttons,
 	&s3c2410_device_dma,
@@ -747,6 +769,7 @@ static struct platform_device *h1940_devices[] __initdata = {
 	&s3c_device_ts,
 	&power_supply,
 	&h1940_battery,
+	&h1940_bluetooth,
 };
 
 static void __init h1940_map_io(void)
@@ -823,6 +846,23 @@ static void __init h1940_init(void)
 	gpio_direction_output(H1940_LATCH_SD_POWER, 0);
 
 	pwm_add_table(h1940_pwm_lookup, ARRAY_SIZE(h1940_pwm_lookup));
+
+	/* Configures BT serial port GPIOs */
+	s3c_gpio_cfgpin(S3C2410_GPH(0), S3C2410_GPH0_nCTS0);
+	s3c_gpio_setpull(S3C2410_GPH(0), S3C_GPIO_PULL_NONE);
+	s3c_gpio_cfgpin(S3C2410_GPH(1), S3C2410_GPH1_nRTS0);
+	s3c_gpio_setpull(S3C2410_GPH(1), S3C_GPIO_PULL_NONE);
+	s3c_gpio_cfgpin(S3C2410_GPH(2), S3C2410_GPH2_TXD0);
+	s3c_gpio_setpull(S3C2410_GPH(2), S3C_GPIO_PULL_NONE);
+	s3c_gpio_cfgpin(S3C2410_GPH(3), S3C2410_GPH3_RXD0);
+	s3c_gpio_setpull(S3C2410_GPH(3), S3C_GPIO_PULL_NONE);
+
+	gpio_request(S3C2410_GPC(9), "BT reset");
+	gpio_direction_output(S3C2410_GPC(9), 1);
+
+	platform_device_add_properties(&h1940_bluetooth, h1940_bt_rfkill_prop);
+	gpiod_add_lookup_table(&bt_gpio_lookup);
+
 	platform_add_devices(h1940_devices, ARRAY_SIZE(h1940_devices));
 
 	gpio_request(S3C2410_GPA(1), "Red LED blink");

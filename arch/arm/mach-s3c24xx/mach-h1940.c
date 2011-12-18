@@ -180,7 +180,7 @@ static struct s3c2410_udc_mach_info h1940_udc_cfg __initdata = {
 static struct s3c2410_ts_mach_info h1940_ts_cfg __initdata = {
 		.delay = 10000,
 		.presc = 49,
-		.oversampling_shift = 2,
+		.oversampling_shift = 5,
 		.cfg_gpio = s3c24xx_ts_cfg_gpio,
 };
 

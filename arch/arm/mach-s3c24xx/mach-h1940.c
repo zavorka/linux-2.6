@@ -696,6 +696,22 @@ static struct platform_device h1940_bluetooth = {
 	},
 };
 
+static struct rfkill_gpio_platform_data h1940_ir_rfkill_pdata = {
+	.name		= "h1940-ir",
+	.reset_gpio	= -EINVAL,
+	.shutdown_gpio	= S3C2410_GPB(9),
+	.shutdown_gpio_inverted = 1,
+	.type		= RFKILL_TYPE_IR,
+};
+
+static struct platform_device h1940_irda = {
+	.name		= "rfkill_gpio",
+	.id		= 1,
+	.dev		= {
+		.platform_data = &h1940_ir_rfkill_pdata,
+	},
+};
+
 static struct platform_device *h1940_devices[] __initdata = {
 	&h1940_dev_buttons,
 	&s3c_device_ohci,
@@ -717,6 +733,7 @@ static struct platform_device *h1940_devices[] __initdata = {
 	&power_supply,
 	&h1940_battery,
 	&h1940_bluetooth,
+	&h1940_irda,
 };
 
 static void __init h1940_map_io(void)
@@ -796,6 +813,12 @@ static void __init h1940_init(void)
 	s3c_gpio_setpull(S3C2410_GPH(2), S3C_GPIO_PULL_NONE);
 	s3c_gpio_cfgpin(S3C2410_GPH(3), S3C2410_GPH3_RXD0);
 	s3c_gpio_setpull(S3C2410_GPH(3), S3C_GPIO_PULL_NONE);
+
+	/* Configure IR serial port GPIOs */
+	s3c_gpio_cfgpin(S3C2410_GPH(6), S3C2410_GPH6_TXD2);
+	s3c_gpio_setpull(S3C2410_GPH(6), S3C_GPIO_PULL_NONE);
+	s3c_gpio_cfgpin(S3C2410_GPH(7), S3C2410_GPH7_RXD2);
+	s3c_gpio_setpull(S3C2410_GPH(7), S3C_GPIO_PULL_NONE);
 
 	gpio_request(S3C2410_GPC(9), "BT reset");
 	gpio_direction_output(S3C2410_GPC(9), 1);

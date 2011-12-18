@@ -54,8 +54,8 @@
 
 static struct nand_ecclayout nand_hw_eccoob = {
 	.eccbytes = 3,
-	.eccpos = {0, 1, 2},
-	.oobfree = {{8, 8}}
+	.eccpos = {8, 9, 10},
+	.oobfree = {{2, 6}, {11, 5}}
 };
 
 /* controller and mtd information */

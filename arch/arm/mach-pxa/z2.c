@@ -33,6 +33,7 @@
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
+#include <asm/suspend.h>
 
 #include <mach/pxa27x.h>
 #include <mach/mfp-pxa27x.h>
@@ -739,8 +740,7 @@ static void z2_power_off(void)
 	 */
 	PSPR = 0x0;
 	local_irq_disable();
-	pxa27x_set_pwrmode(PWRMODE_DEEPSLEEP);
-	pxa27x_cpu_pm_enter(PM_SUSPEND_MEM);
+	cpu_suspend(PWRMODE_DEEPSLEEP, pxa27x_finish_suspend);
 }
 #else
 #define z2_power_off   NULL

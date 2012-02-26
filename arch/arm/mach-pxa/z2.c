@@ -751,6 +751,13 @@ static void z2_power_off(void)
 #define z2_power_off   NULL
 #endif
 
+static void __init z2_map_io(void)
+{
+	pxa27x_map_io();
+
+	PWER &= ~(1 << 0);
+}
+
 /******************************************************************************
  * Machine init
  ******************************************************************************/
@@ -781,7 +788,7 @@ static void __init z2_init(void)
 
 MACHINE_START(ZIPIT2, "Zipit Z2")
 	.atag_offset	= 0x100,
-	.map_io		= pxa27x_map_io,
+	.map_io		= z2_map_io,
 	.nr_irqs	= PXA_NR_IRQS,
 	.init_irq	= pxa27x_init_irq,
 	.handle_irq	= pxa27x_handle_irq,

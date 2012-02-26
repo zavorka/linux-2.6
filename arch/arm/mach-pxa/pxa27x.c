@@ -263,6 +263,7 @@ enum {
 	SLEEP_SAVE_PSTR,
 	SLEEP_SAVE_MDREFR,
 	SLEEP_SAVE_PCFR,
+	SLEEP_SAVE_PWER,
 	SLEEP_SAVE_COUNT
 };
 
@@ -270,7 +271,7 @@ void pxa27x_cpu_pm_save(unsigned long *sleep_save)
 {
 	sleep_save[SLEEP_SAVE_MDREFR] = __raw_readl(MDREFR);
 	SAVE(PCFR);
-
+	SAVE(PWER);
 	SAVE(PSTR);
 }
 
@@ -282,6 +283,7 @@ void pxa27x_cpu_pm_restore(unsigned long *sleep_save)
 	PSSR = PSSR_RDH | PSSR_PH;
 
 	RESTORE(PSTR);
+	RESTORE(PWER);
 }
 
 void pxa27x_cpu_pm_enter(suspend_state_t state)

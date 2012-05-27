@@ -448,7 +448,7 @@ static struct gpio_keys_button z2_pxa_buttons[] = {
 	{
 		.code		= KEY_POWER,
 		.gpio		= GPIO1_ZIPITZ2_POWER_BUTTON,
-		.active_low	= 0,
+		.active_low	= 1,
 		.desc		= "Power Button",
 		.wakeup		= 1,
 		.type		= EV_KEY,

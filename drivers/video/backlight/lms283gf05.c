@@ -22,6 +22,7 @@
 struct lms283gf05_state {
 	struct spi_device	*spi;
 	struct lcd_device	*ld;
+	unsigned int		power;
 };
 
 struct lms283gf05_seq {
@@ -130,6 +131,8 @@ static int lms283gf05_power_set(struct lcd_device *ld, int power)
 	struct spi_device *spi = st->spi;
 	struct lms283gf05_pdata *pdata = dev_get_platdata(&spi->dev);
 
+	st->power = power;
+
 	if (power <= FB_BLANK_NORMAL) {
 		if (pdata)
 			lms283gf05_reset(pdata->reset_gpio,
@@ -191,12 +194,61 @@ static int lms283gf05_probe(struct spi_device *spi)
 	return 0;
 }
 
+#if defined(CONFIG_PM)
+static unsigned int before_power;
+
+static int lms283gf05_suspend(struct spi_device *spi, pm_message_t mesg)
+{
+	int ret = 0;
+	struct lms283gf05_state *state = dev_get_drvdata(&spi->dev);
+
+	dev_dbg(&spi->dev, "lcd->power = %d\n", state->power);
+
+	before_power = state->power;
+
+	/*
+	 * when lcd panel is suspend, lcd panel becomes off
+	 * regardless of status.
+	 */
+	ret = lms283gf05_power_set(state->ld, FB_BLANK_POWERDOWN);
+
+	return ret;
+}
+
+static int lms283gf05_resume(struct spi_device *spi)
+{
+	int ret = 0;
+	struct lms283gf05_state *state = dev_get_drvdata(&spi->dev);
+
+	dev_dbg(&spi->dev, "before_power = %d\n", before_power);
+
+	ret = lms283gf05_power_set(state->ld, before_power);
+
+	return ret;
+}
+#else
+#define lms283gf05_suspend	NULL
+#define lms283gf05_resume	NULL
+#endif
+
+static int lms283gf05_remove(struct spi_device *spi)
+{
+	struct lms283gf05_state *st = dev_get_drvdata(&spi->dev);
+
+	lcd_device_unregister(st->ld);
+
+	return 0;
+}
+
 static struct spi_driver lms283gf05_driver = {
 	.driver = {
 		.name	= "lms283gf05",
 		.owner	= THIS_MODULE,
 	},
 	.probe		= lms283gf05_probe,
+	.remove		= lms283gf05_remove,
+	.suspend	= lms283gf05_suspend,
+	.resume		= lms283gf05_resume,
 };
 
 module_spi_driver(lms283gf05_driver);

@@ -649,7 +649,7 @@ static int pxa27x_keypad_open(struct input_dev *dev)
 	struct pxa27x_keypad *keypad = input_get_drvdata(dev);
 
 	/* Enable unit clock */
-	clk_prepare_enable(keypad->clk);
+	clk_enable(keypad->clk);
 	pxa27x_keypad_config(keypad);
 
 	return 0;
@@ -660,7 +660,7 @@ static void pxa27x_keypad_close(struct input_dev *dev)
 	struct pxa27x_keypad *keypad = input_get_drvdata(dev);
 
 	/* Disable clock unit */
-	clk_disable_unprepare(keypad->clk);
+	clk_disable(keypad->clk);
 }
 
 #ifdef CONFIG_PM_SLEEP
@@ -669,14 +669,10 @@ static int pxa27x_keypad_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct pxa27x_keypad *keypad = platform_get_drvdata(pdev);
 
-	/*
-	 * If the keypad is used a wake up source, clock can not be disabled.
-	 * Or it can not detect the key pressing.
-	 */
+	clk_disable(keypad->clk);
+
 	if (device_may_wakeup(&pdev->dev))
 		enable_irq_wake(keypad->irq);
-	else
-		clk_disable_unprepare(keypad->clk);
 
 	return 0;
 }
@@ -687,23 +683,18 @@ static int pxa27x_keypad_resume(struct device *dev)
 	struct pxa27x_keypad *keypad = platform_get_drvdata(pdev);
 	struct input_dev *input_dev = keypad->input_dev;
 
-	/*
-	 * If the keypad is used as wake up source, the clock is not turned
-	 * off. So do not need configure it again.
-	 */
-	if (device_may_wakeup(&pdev->dev)) {
+	if (device_may_wakeup(&pdev->dev))
 		disable_irq_wake(keypad->irq);
-	} else {
-		mutex_lock(&input_dev->mutex);
 
-		if (input_dev->users) {
-			/* Enable unit clock */
-			clk_prepare_enable(keypad->clk);
-			pxa27x_keypad_config(keypad);
-		}
+	mutex_lock(&input_dev->mutex);
 
-		mutex_unlock(&input_dev->mutex);
+	if (input_dev->users) {
+		/* Enable unit clock */
+		clk_enable(keypad->clk);
+		pxa27x_keypad_config(keypad);
 	}
+
+	mutex_unlock(&input_dev->mutex);
 
 	return 0;
 }

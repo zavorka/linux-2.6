@@ -145,8 +145,25 @@ static unsigned long z2_pin_config[] = {
 	GPIO98_GPIO,		/* Lid switch */
 	GPIO14_GPIO,		/* WiFi Power */
 	GPIO24_GPIO,		/* WiFi CS */
+	GPIO42_GPIO,		/* BTRXD / ICP_RXD */
 	GPIO36_GPIO,		/* WiFi IRQ */
+	GPIO86_GPIO,		/* SSPRXD2 / USB_P3_5 */
 	GPIO88_GPIO,		/* LCD CS */
+
+	/* Camera GPIO's on dock connector */
+	GPIO12_GPIO,		/* CIF_DD<7> */
+	GPIO44_GPIO,		/* CIF_LV camera frame start / V.sync */
+	GPIO45_GPIO,		/* CIF_PCLK / SSPSYSCLK3 */
+	GPIO50_GPIO,		/* CIF_DD<3> */
+	GPIO51_GPIO,		/* CIF_DD<2> */
+	GPIO52_GPIO,		/* CIF_DD<4> */
+	GPIO53_GPIO,		/* CIF_MCLK  master clock out to camera	 */
+	GPIO54_GPIO,		/* CIF_PCLK  pixel clock (max 26 MHz) */
+	GPIO81_GPIO,		/* CIF_DD<0> */
+	GPIO84_GPIO,		/* CIF_FV camera line start / H.sync */
+	GPIO93_GPIO,		/* CIF_DD<6> */
+	GPIO94_GPIO,		/* CIF_DD<5> */
+	GPIO114_GPIO,		/* CIF_DD<1> */
 };
 
 /******************************************************************************

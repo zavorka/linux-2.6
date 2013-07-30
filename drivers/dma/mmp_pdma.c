@@ -769,6 +769,22 @@ static int mmp_pdma_terminate_all(struct dma_chan *dchan)
 	return 0;
 }
 
+static int mmp_pdma_pause(struct dma_chan *dchan)
+{
+	struct mmp_pdma_chan *chan = to_mmp_pdma_chan(dchan);
+
+	disable_chan(chan->phy);
+	return 0;
+}
+
+static int mmp_pdma_resume(struct dma_chan *dchan)
+{
+	struct mmp_pdma_chan *chan = to_mmp_pdma_chan(dchan);
+
+	start_pending_queue(chan);
+	return 0;
+}
+
 static unsigned int mmp_pdma_residue(struct mmp_pdma_chan *chan,
 				     dma_cookie_t cookie)
 {
@@ -1087,6 +1103,8 @@ static int mmp_pdma_probe(struct platform_device *op)
 	pdev->device.device_issue_pending = mmp_pdma_issue_pending;
 	pdev->device.device_config = mmp_pdma_config;
 	pdev->device.device_terminate_all = mmp_pdma_terminate_all;
+	pdev->device.device_pause = mmp_pdma_pause;
+	pdev->device.device_resume = mmp_pdma_resume;
 	pdev->device.copy_align = PDMA_ALIGNMENT;
 	pdev->device.src_addr_widths = widths;
 	pdev->device.dst_addr_widths = widths;

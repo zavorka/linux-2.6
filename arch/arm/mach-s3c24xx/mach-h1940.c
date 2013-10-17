@@ -682,8 +682,6 @@ static void __init h1940_reserve(void)
 
 static void __init h1940_init(void)
 {
-	u32 tmp;
-
 	s3c24xx_fb_set_platdata(&h1940_fb_info);
 	s3c24xx_mci_set_platdata(&h1940_mmc_cfg);
  	s3c24xx_udc_set_platdata(&h1940_udc_cfg);
@@ -696,11 +694,6 @@ static void __init h1940_init(void)
 	s3c2410_modify_misccr(S3C2410_MISCCR_USBHOST |
 			      S3C2410_MISCCR_USBSUSPND0 |
 			      S3C2410_MISCCR_USBSUSPND1, 0x0);
-
-	tmp =   (0x78 << S3C24XX_PLL_MDIV_SHIFT)
-	      | (0x02 << S3C24XX_PLL_PDIV_SHIFT)
-	      | (0x03 << S3C24XX_PLL_SDIV_SHIFT);
-	writel(tmp, S3C2410_UPLLCON);
 
 	gpio_request(S3C2410_GPC(0), "LCD power");
 	gpio_request(S3C2410_GPC(1), "LCD power");

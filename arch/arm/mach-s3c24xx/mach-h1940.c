@@ -33,6 +33,9 @@
 #include <linux/s3c_adc_battery.h>
 #include <linux/delay.h>
 
+#include <linux/mtd/mtd.h>
+#include <linux/mtd/partitions.h>
+
 #include <video/platform_lcd.h>
 
 #include <linux/mmc/host.h>
@@ -48,6 +51,7 @@
 #include <linux/platform_data/mmc-s3cmci.h>
 #include <linux/platform_data/touchscreen-s3c2410.h>
 #include <linux/platform_data/usb-s3c2410_udc.h>
+#include <linux/platform_data/mtd-nand-s3c2410.h>
 
 #include <sound/uda1380.h>
 
@@ -475,6 +479,100 @@ static struct pwm_lookup h1940_pwm_lookup[] = {
 		   PWM_POLARITY_NORMAL),
 };
 
+static struct mtd_partition h1940_nand_part[] = {
+	[0] = {
+			.name = "Boot0",
+			.offset = 0,
+			.size = SZ_16K,
+			.mask_flags = MTD_WRITEABLE,
+	},
+	[1] = {
+			.name = "Boot1",
+			.offset = MTDPART_OFS_APPEND,
+			.size = SZ_1K * 240,
+			.mask_flags = 0,
+	},
+	[2] = {
+			.name = "Env",
+			.offset = MTDPART_OFS_APPEND,
+			.size = SZ_16K,
+			.mask_flags = 0,
+	},
+	[3] = {
+			.name = "Opts",
+			.offset = MTDPART_OFS_APPEND,
+			.size = SZ_32K,
+			.mask_flags = 0,
+	},
+	[4] = {
+			.name = "Kernel",
+			.offset = MTDPART_OFS_APPEND,
+			.size = SZ_1M * 3,
+			.mask_flags = 0,
+	},
+	[5] = {
+			.name = "Filesystem",
+			.offset = MTDPART_OFS_APPEND,
+			.size = MTDPART_SIZ_FULL,
+			.mask_flags = 0,
+	},
+};
+
+static int h1940_ooblayout_ecc(struct mtd_info *mtd, int section,
+			       struct mtd_oob_region *region)
+{
+	if (section)
+		return -ERANGE;
+
+	region->offset = 8;
+	region->length = 3;
+
+	return 0;
+}
+
+static int h1940_ooblayout_free(struct mtd_info *mtd, int section,
+				struct mtd_oob_region *region)
+{
+	switch (section) {
+	case 0:
+		region->offset = 2;
+		region->length = 6;
+		break;
+	case 1:
+		region->offset = 11;
+		region->length = 5;
+		break;
+	default:
+		return -ERANGE;
+	}
+
+	return 0;
+}
+
+static struct mtd_ooblayout_ops h1940_ooblayout_ops = {
+	.ecc = h1940_ooblayout_ecc,
+	.free = h1940_ooblayout_free,
+};
+
+static struct s3c2410_nand_set h1940_nand_sets[] = {
+	[0] = {
+		.name = "Internal",
+		.nr_chips = 1,
+		.nr_partitions = ARRAY_SIZE(h1940_nand_part),
+		.partitions = h1940_nand_part,
+		.ooblayout_ops = &h1940_ooblayout_ops,
+	},
+};
+
+static struct s3c2410_platform_nand h1940_nand_info = {
+	.tacls = 14,
+	.twrph0 = 44,
+	.twrph1 = 20,
+	.nr_sets = ARRAY_SIZE(h1940_nand_sets),
+	.sets = h1940_nand_sets,
+	.ecc_mode = NAND_ECC_SOFT,
+};
+
 static int h1940_backlight_init(struct device *dev)
 {
 	gpio_request(S3C2410_GPB(0), "Backlight");
@@ -640,6 +738,7 @@ static struct platform_device *h1940_devices[] __initdata = {
 	&h1940_device_bluetooth,
 	&s3c_device_sdi,
 	&s3c_device_rtc,
+	&s3c_device_nand,
 	&samsung_device_pwm,
 	&h1940_backlight,
 	&h1940_lcd_powerdev,
@@ -689,6 +788,7 @@ static void __init h1940_init(void)
  	s3c24xx_udc_set_platdata(&h1940_udc_cfg);
 	s3c24xx_ts_set_platdata(&h1940_ts_cfg);
 	s3c_i2c0_set_platdata(NULL);
+	s3c_nand_set_platdata(&h1940_nand_info);
 
 	/* Turn off suspend on both USB ports, and switch the
 	 * selectable USB port to USB device mode. */

@@ -593,7 +593,7 @@ static DEVICE_ATTR_RO(name);
 
 static const char *rfkill_get_type_str(enum rfkill_type type)
 {
-	BUILD_BUG_ON(NUM_RFKILL_TYPES != RFKILL_TYPE_NFC + 1);
+	BUILD_BUG_ON(NUM_RFKILL_TYPES != RFKILL_TYPE_IR + 1);
 
 	switch (type) {
 	case RFKILL_TYPE_WLAN:
@@ -612,6 +612,8 @@ static const char *rfkill_get_type_str(enum rfkill_type type)
 		return "fm";
 	case RFKILL_TYPE_NFC:
 		return "nfc";
+	case RFKILL_TYPE_IR:
+		return "ir";
 	default:
 		BUG();
 	}

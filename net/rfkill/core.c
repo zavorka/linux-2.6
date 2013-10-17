@@ -586,6 +586,7 @@ static const char * const rfkill_types[] = {
 	"gps",
 	"fm",
 	"nfc",
+	"ir",
 };
 
 enum rfkill_type rfkill_find_type(const char *name)

@@ -53,18 +53,22 @@ static int rfkill_gpio_set_power(void *data, bool blocked)
 
 	if (blocked) {
 		if (gpio_is_valid(rfkill->pdata->shutdown_gpio))
-			gpio_direction_output(rfkill->pdata->shutdown_gpio, 0);
+			gpio_direction_output(rfkill->pdata->shutdown_gpio,
+				rfkill->pdata->shutdown_gpio_inverted);
 		if (gpio_is_valid(rfkill->pdata->reset_gpio))
-			gpio_direction_output(rfkill->pdata->reset_gpio, 0);
+			gpio_direction_output(rfkill->pdata->reset_gpio,
+				rfkill->pdata->reset_gpio_inverted);
 		if (rfkill->pwr_clk && PWR_CLK_ENABLED(rfkill))
 			clk_disable(rfkill->pwr_clk);
 	} else {
 		if (rfkill->pwr_clk && PWR_CLK_DISABLED(rfkill))
 			clk_enable(rfkill->pwr_clk);
 		if (gpio_is_valid(rfkill->pdata->reset_gpio))
-			gpio_direction_output(rfkill->pdata->reset_gpio, 1);
+			gpio_direction_output(rfkill->pdata->reset_gpio,
+				!rfkill->pdata->reset_gpio_inverted);
 		if (gpio_is_valid(rfkill->pdata->shutdown_gpio))
-			gpio_direction_output(rfkill->pdata->shutdown_gpio, 1);
+			gpio_direction_output(rfkill->pdata->shutdown_gpio,
+				!rfkill->pdata->shutdown_gpio_inverted);
 	}
 
 	if (rfkill->pwr_clk)

@@ -37,7 +37,9 @@
 struct rfkill_gpio_platform_data {
 	char			*name;
 	int			reset_gpio;
+	int			reset_gpio_inverted;
 	int			shutdown_gpio;
+	int			shutdown_gpio_inverted;
 	const char		*power_clk_name;
 	enum rfkill_type	type;
 	void	(*gpio_runtime_close)(struct platform_device *);

@@ -94,28 +94,15 @@ enum s3c2410_dma_state {
  *
  * There are no buffers loaded (the channel should be inactive)
  *
- * S3C2410_DMA_1LOADED
- *
- * There is one buffer loaded, however it has not been confirmed to be
- * loaded by the DMA engine. This may be because the channel is not
- * yet running, or the DMA driver decided that it was too costly to
- * sit and wait for it to happen.
- *
  * S3C2410_DMA_1RUNNING
  *
- * The buffer has been confirmed running, and not finisged
+ * The buffer has been confirmed running, and not finished
  *
- * S3C2410_DMA_1LOADED_1RUNNING
- *
- * There is a buffer waiting to be loaded by the DMA engine, and one
- * currently running.
 */
 
 enum s3c2410_dma_loadst {
 	S3C2410_DMALOAD_NONE,
-	S3C2410_DMALOAD_1LOADED,
 	S3C2410_DMALOAD_1RUNNING,
-	S3C2410_DMALOAD_1LOADED_1RUNNING,
 };
 
 

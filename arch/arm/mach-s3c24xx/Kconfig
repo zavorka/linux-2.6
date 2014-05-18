@@ -131,7 +131,6 @@ config S3C2410_DMA_DEBUG
 
 config S3C2410_DMA
 	bool
-	depends on S3C24XX_DMA && (CPU_S3C2410 || CPU_S3C2442)
 	help
 	  DMA device selection for S3C2410 and compatible CPUs
 

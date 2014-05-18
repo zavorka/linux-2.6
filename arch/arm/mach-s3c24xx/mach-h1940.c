@@ -745,6 +745,7 @@ static struct gpiod_lookup_table ir_gpio_lookup = {
 
 static struct platform_device *h1940_devices[] __initdata = {
 	&h1940_dev_buttons,
+	&s3c2410_device_dma,
 	&s3c_device_ohci,
 	&s3c_device_lcd,
 	&s3c_device_wdt,

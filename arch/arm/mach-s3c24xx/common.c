@@ -355,6 +355,7 @@ struct platform_device s3c2410_device_dma = {
 	.resource	= s3c2410_dma_resource,
 	.dev	= {
 		.platform_data	= &s3c2410_dma_platdata,
+		.coherent_dma_mask = ~0,
 	},
 };
 #endif
@@ -452,6 +453,7 @@ struct platform_device s3c2440_device_dma = {
 	.resource	= s3c2410_dma_resource,
 	.dev	= {
 		.platform_data	= &s3c2440_dma_platdata,
+		.coherent_dma_mask = ~0,
 	},
 };
 #endif

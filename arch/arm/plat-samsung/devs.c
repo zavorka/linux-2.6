@@ -572,6 +572,8 @@ void __init s3c_i2c7_set_platdata(struct s3c2410_platform_i2c *pd)
 #ifdef CONFIG_PLAT_S3C24XX
 static struct resource s3c_iis_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C24XX_PA_IIS, S3C24XX_SZ_IIS),
+	[1] = DEFINE_RES_DMA(DMACH_I2S_OUT),
+	[2] = DEFINE_RES_DMA(DMACH_I2S_IN),
 };
 
 static struct s3c_audio_pdata s3c_iis_platdata = {
@@ -871,6 +873,7 @@ struct platform_device s3c_device_rtc = {
 static struct resource s3c_sdi_resource[] = {
 	[0] = DEFINE_RES_MEM(S3C24XX_PA_SDI, S3C24XX_SZ_SDI),
 	[1] = DEFINE_RES_IRQ(IRQ_SDI),
+	[2] = DEFINE_RES_DMA(DMACH_SDI),
 };
 
 struct platform_device s3c_device_sdi = {

@@ -319,7 +319,7 @@ static struct resource s3c2410_dma_resource[] = {
 static struct s3c24xx_dma_channel s3c2410_dma_channels[DMACH_MAX] = {
 	[DMACH_XD0] = { S3C24XX_DMA_AHB, true, S3C24XX_DMA_CHANREQ(0, 0), },
 	[DMACH_XD1] = { S3C24XX_DMA_AHB, true, S3C24XX_DMA_CHANREQ(0, 1), },
-	[DMACH_SDI] = { S3C24XX_DMA_APB, false, S3C24XX_DMA_CHANREQ(2, 0) |
+	[DMACH_SDI] = { S3C24XX_DMA_APB, true, S3C24XX_DMA_CHANREQ(2, 0) |
 						S3C24XX_DMA_CHANREQ(2, 2) |
 						S3C24XX_DMA_CHANREQ(1, 3),
 	},

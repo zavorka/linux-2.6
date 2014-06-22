@@ -23,6 +23,7 @@
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <linux/gpio.h>
+#include <linux/gpio/machine.h>
 #include <linux/input.h>
 #include <linux/gpio_keys.h>
 #include <linux/pwm_backlight.h>
@@ -699,8 +700,6 @@ static struct platform_device h1940_dev_buttons = {
 
 static struct rfkill_gpio_platform_data h1940_bt_rfkill_pdata = {
 	.name		= "h1940-bt",
-	.reset_gpio	= -EINVAL,
-	.shutdown_gpio	= H1940_LATCH_BLUETOOTH_POWER,
 	.type		= RFKILL_TYPE_BLUETOOTH,
 };
 
@@ -713,17 +712,15 @@ static struct platform_device h1940_bluetooth = {
 };
 
 static struct gpiod_lookup_table bt_gpio_lookup = {
-	.dev_id = "h1940-bt",
+	.dev_id = "rfkill_gpio.0",
 	.table = {
-		GPIO_LOOKUP_IDX("H1940_LATCH", 13, NULL, 0, 0),
+		GPIO_LOOKUP_IDX("H1940_LATCH", 13, NULL, 1, 0),
 		{ },
 	},
 };
 
 static struct rfkill_gpio_platform_data h1940_ir_rfkill_pdata = {
 	.name		= "h1940-ir",
-	.reset_gpio	= -EINVAL,
-	.shutdown_gpio	= S3C2410_GPB(9),
 	.type		= RFKILL_TYPE_IR,
 };
 
@@ -736,9 +733,9 @@ static struct platform_device h1940_irda = {
 };
 
 static struct gpiod_lookup_table ir_gpio_lookup = {
-	.dev_id = "h1940-ir",
+	.dev_id = "rfkill_gpio.1",
 	.table = {
-		GPIO_LOOKUP_IDX("GPIOB", 9, NULL, 0, GPIO_ACTIVE_LOW),
+		GPIO_LOOKUP_IDX("GPIOB", 9, NULL, 1, GPIO_ACTIVE_LOW),
 		{ },
 	},
 };

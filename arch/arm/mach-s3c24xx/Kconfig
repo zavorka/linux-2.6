@@ -427,12 +427,7 @@ config MACH_S3C2416_DT
 
 endif	# CPU_S3C2416
 
-if CPU_S3C2440
-
-config S3C2440_DMA
-	bool
-	help
-	  Support for S3C2440 specific DMA code5A
+if CPU_S3C2440 || CPU_S3C2442
 
 config S3C2440_XTAL_12000000
 	bool
@@ -459,6 +454,14 @@ config S3C2440_PLL_16934400
 	default y if S3C24XX_PLL
 	help
 	  PLL tables for S3C2440 or S3C2442 CPUs with 16.934MHz crystals.
+endif
+
+if CPU_S3C2440
+
+config S3C2440_DMA
+	bool
+	help
+	  Support for S3C2440 specific DMA code5A
 
 comment "S3C2440 Boards"
 

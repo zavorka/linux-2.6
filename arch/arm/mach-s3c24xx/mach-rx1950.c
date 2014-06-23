@@ -714,6 +714,7 @@ static struct i2c_board_info rx1950_i2c_devices[] = {
 
 static struct platform_device *rx1950_devices[] __initdata = {
 	&s3c2410_device_dclk,
+	&s3c2410_device_dma,
 	&s3c_device_lcd,
 	&s3c_device_wdt,
 	&s3c_device_i2c0,

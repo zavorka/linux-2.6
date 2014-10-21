@@ -606,15 +606,13 @@ mmp_pdma_prep_dma_cyclic(struct dma_chan *dchan,
 	struct mmp_pdma_chan *chan;
 	struct mmp_pdma_desc_sw *first = NULL, *prev = NULL, *new;
 	dma_addr_t dma_src, dma_dst;
+	size_t desc_len;
 
 	if (!dchan || !len || !period_len)
 		return NULL;
 
 	/* the buffer length must be a multiple of period_len */
 	if (len % period_len != 0)
-		return NULL;
-
-	if (period_len > PDMA_MAX_DESC_BYTES)
 		return NULL;
 
 	chan = to_mmp_pdma_chan(dchan);
@@ -642,9 +640,14 @@ mmp_pdma_prep_dma_cyclic(struct dma_chan *dchan,
 			dev_err(chan->dev, "no memory for desc\n");
 			goto fail;
 		}
-
-		new->desc.dcmd = (chan->dcmd | DCMD_ENDIRQEN |
-				  (DCMD_LENGTH & period_len));
+		desc_len = min_t(size_t, len % period_len, PDMA_MAX_DESC_BYTES & (~31));
+		if (!desc_len)
+			desc_len = min_t(size_t, period_len, PDMA_MAX_DESC_BYTES & (~31));
+		len -= desc_len;
+		new->desc.dcmd = (chan->dcmd |
+				  (DCMD_LENGTH & desc_len));
+		if (!(len % period_len))
+			new->desc.dcmd |= DCMD_ENDIRQEN;
 		new->desc.dsadr = dma_src;
 		new->desc.dtadr = dma_dst;
 
@@ -657,12 +660,11 @@ mmp_pdma_prep_dma_cyclic(struct dma_chan *dchan,
 		async_tx_ack(&new->async_tx);
 
 		prev = new;
-		len -= period_len;
 
 		if (chan->dir == DMA_MEM_TO_DEV)
-			dma_src += period_len;
+			dma_src += desc_len;
 		else
-			dma_dst += period_len;
+			dma_dst += desc_len;
 
 		/* Insert the link descriptor to the LD ring */
 		list_add_tail(&new->node, &first->tx_list);

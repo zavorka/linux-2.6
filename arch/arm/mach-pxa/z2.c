@@ -31,6 +31,7 @@
 #include <linux/delay.h>
 #include <linux/regulator/machine.h>
 #include <linux/i2c/pxa-i2c.h>
+#include <linux/dma/mmp-pdma.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -614,6 +615,9 @@ static struct pxa2xx_spi_master pxa_ssp1_master_info = {
 	.clock_enable	= CKEN_SSP,
 	.num_chipselect	= 1,
 	.enable_dma	= 1,
+	.dma_filter	= mmp_pdma_filter_fn,
+	.tx_param	= (void *)14,
+	.rx_param	= (void *)13,
 };
 
 static struct pxa2xx_spi_master pxa_ssp2_master_info = {

@@ -312,6 +312,7 @@ int snd_dmaengine_pcm_open(struct snd_pcm_substream *substream,
 	prtd->dma_chan = chan;
 
 	substream->runtime->private_data = prtd;
+	printk("%s: %p\n", __func__, prtd);
 
 	return 0;
 }

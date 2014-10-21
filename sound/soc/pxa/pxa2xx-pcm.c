@@ -26,7 +26,6 @@ static int pxa2xx_pcm_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	struct pxa2xx_runtime_data *prtd = runtime->private_data;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_dmaengine_dai_dma_data *dma;
 
@@ -37,18 +36,12 @@ static int pxa2xx_pcm_hw_params(struct snd_pcm_substream *substream,
 	if (!dma)
 		return 0;
 
-	prtd->params = dma;
-
 	return __pxa2xx_pcm_hw_params(substream, params);
 }
 
 static int pxa2xx_pcm_hw_free(struct snd_pcm_substream *substream)
 {
-	struct pxa2xx_runtime_data *prtd = substream->runtime->private_data;
-
 	__pxa2xx_pcm_hw_free(substream);
-
-	prtd->params = NULL;
 
 	return 0;
 }

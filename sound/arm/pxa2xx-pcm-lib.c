@@ -28,7 +28,7 @@ static const struct snd_pcm_hardware pxa2xx_pcm_hardware = {
 					SNDRV_PCM_FMTBIT_S24_LE |
 					SNDRV_PCM_FMTBIT_S32_LE,
 	.period_bytes_min	= 32,
-	.period_bytes_max	= 8192 - 32,
+	.period_bytes_max	= 64 * 1024,
 	.periods_min		= 1,
 	.periods_max		= 256,
 	.buffer_bytes_max	= 128 * 1024,

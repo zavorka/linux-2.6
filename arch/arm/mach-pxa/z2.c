@@ -564,6 +564,7 @@ static int z2_lbs_spi_teardown(struct spi_device *spi)
 static struct pxa2xx_spi_chip z2_lbs_chip_info = {
 	.rx_threshold	= 8,
 	.tx_threshold	= 8,
+	.dma_burst_size = 8,
 	.timeout	= 1000,
 	.gpio_cs	= GPIO24_ZIPITZ2_WIFI_CS,
 };
@@ -592,7 +593,7 @@ static struct spi_board_info spi_board_info[] __initdata = {
 	.platform_data		= &z2_lbs_pdata,
 	.controller_data	= &z2_lbs_chip_info,
 	.irq			= PXA_GPIO_TO_IRQ(GPIO36_ZIPITZ2_WIFI_IRQ),
-	.max_speed_hz		= 13000000,
+	.max_speed_hz		= 16000000,
 	.bus_num		= 1,
 	.chip_select		= 0,
 },

@@ -157,9 +157,9 @@ static pxa_freqs_t pxa27x_freqs[] = {
 	{104000, 104000, PXA27x_CCCR(1,	 8, 2), 0, CCLKCFG2(0, 0, 1),  900000, 1705000 },
 	{156000, 104000, PXA27x_CCCR(1,	 8, 3), 0, CCLKCFG2(0, 0, 1), 1000000, 1705000 },
 	{208000, 208000, PXA27x_CCCR(0, 16, 2), 1, CCLKCFG2(0, 0, 1), 1180000, 1705000 },
-	{312000, 208000, PXA27x_CCCR(1, 16, 3), 1, CCLKCFG2(0, 0, 1), 1250000, 1705000 },
-	{416000, 208000, PXA27x_CCCR(1, 16, 4), 1, CCLKCFG2(0, 0, 1), 1350000, 1705000 },
-	{520000, 208000, PXA27x_CCCR(1, 16, 5), 1, CCLKCFG2(0, 0, 1), 1450000, 1705000 },
+	{312000, 208000, PXA27x_CCCR(1, 16, 3), 1, CCLKCFG2(1, 0, 1), 1250000, 1705000 },
+	{416000, 208000, PXA27x_CCCR(1, 16, 4), 1, CCLKCFG2(1, 0, 1), 1350000, 1705000 },
+	{520000, 208000, PXA27x_CCCR(1, 16, 5), 1, CCLKCFG2(1, 0, 1), 1450000, 1705000 },
 	{624000, 208000, PXA27x_CCCR(1, 16, 6), 1, CCLKCFG2(0, 0, 1), 1550000, 1705000 }
 };
 
@@ -232,7 +232,7 @@ static void find_freq_tables(struct cpufreq_frequency_table **freq_table,
 static void pxa27x_guess_max_freq(void)
 {
 	if (!pxa27x_maxfreq) {
-		pxa27x_maxfreq = 416000;
+		pxa27x_maxfreq = 520000;
 		printk(KERN_INFO "PXA CPU 27x max frequency not defined "
 		       "(pxa27x_maxfreq), assuming pxa271 with %dkHz maxfreq\n",
 		       pxa27x_maxfreq);

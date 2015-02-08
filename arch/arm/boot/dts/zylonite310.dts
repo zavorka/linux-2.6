@@ -1,0 +1,95 @@
+/*
+ *  Copyright (C) Robert Jarzmik <robert.jarzmik@free.fr>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  publishhed by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include "pxa3xx.dtsi"
+#include "include/dt-bindings/gpio/gpio.h"
+#include "include/dt-bindings/clock/pxa-clock.h"
+#include "dt-bindings/interrupt-controller/irq.h"
+
+/ {
+	model = "Marvell Zylonite System Development Platform";
+	compatible = "marvell,pxa310", "marvell,pxa3xx";
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlyprintk mtdparts=pxa3xx_nand-0:128k@0(TIMH)ro,128k@128k(OBMI)ro,768k@256k(barebox),256k@1024k(barebox-env),12M@1280k(kernel),38016k@13568k(root) ubi.mtd=5 rootfstype=ubifs root=ubi0:root ro ip=dhcp clk_ignore_unused";
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0xa0000000 0x04000000>;
+
+		reserved-memory {
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			pstore_region:region@0xa2000000 {
+				compatible = "linux,contiguous-memory-region";
+				reg = <0xa2000000 1048576>;
+			};
+		};
+	};
+
+	reg_vcc3v3: vcc3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+	};
+
+	pxabus {
+		ffuart: uart@40100000 {
+			status = "okay";
+		};
+
+		btuart: uart@40200000 {
+			status = "okay";
+		};
+
+		nand0: nand@43100000 {
+			num-cs = <1>;
+			marvell,nand-enable-arbiter;
+			marvell,nand-keep-config;
+			nand-on-flash-bbt;
+-			marvell,detect-delay-ms = <200>;
+			status = "okay";
+		};
+
+		mmc0: mmc@41100000 {
+			vmmc-supply = <&reg_vcc3v3>;
+			cd-gpios = <&gpio 0 0>;
+			wp-gpios = <&gpio 2 0>;
+-			marvell,detect-delay-ms = <200>;
+			status = "okay";
+		};
+
+		mmc1: mmc@42000000 {
+			vmmc-supply = <&reg_vcc3v3>;
+			cd-gpios = <&gpio 1 0>;
+			wp-gpios = <&gpio 3 0>;
+-			marvell,detect-delay-ms = <200>;
+			status = "okay";
+		};
+
+		mmc2: mmc@42500000 {
+			vmmc-supply = <&reg_vcc3v3>;
+			cd-gpios = <&gpio 30 0>;
+			wp-gpios = <&gpio 31 0>;
+-			marvell,detect-delay-ms = <200>;
+			status = "okay";
+		};
+
+		lan: smc91c111@14000300 {
+			compatible = "smsc,lan91c111";
+			reg = <0x14000300 0xfffff>;
+			interrupts-extended = <&gpio 102 IRQ_TYPE_EDGE_RISING>;
+			reg-io-width = <2>;
+			
+		};
+	};
+};

@@ -198,6 +198,15 @@ static int clear_chan_irq(struct mmp_pdma_phy *phy)
 	return 0;
 }
 
+/*
+ * In the transition phase where legacy pxa handling is done at the same time as
+ * mmp_dma, the DMA physical channel split between the 2 DMA providers is done
+ * through legacy_reserved. Legacy code reserves DMA channels by settings
+ * corresponding bits in legacy_reserved.
+ */
+static u32 legacy_reserved;
+static u32 legacy_unavailable;
+
 static irqreturn_t mmp_pdma_chan_handler(int irq, void *dev_id)
 {
 	struct mmp_pdma_phy *phy = dev_id;
@@ -221,6 +230,8 @@ static irqreturn_t mmp_pdma_int_handler(int irq, void *dev_id)
 		i = __ffs(dint);
 		dint &= (dint - 1);
 		phy = &pdev->phy[i];
+		if ((i < 32) && (legacy_reserved & (1 << i)))
+			continue;
 		ret = mmp_pdma_chan_handler(irq, phy);
 		if (ret == IRQ_HANDLED)
 			irq_num++;
@@ -253,10 +264,14 @@ static struct mmp_pdma_phy *lookup_phy(struct mmp_pdma_chan *pchan)
 		for (i = 0; i < pdev->dma_channels; i++) {
 			if (prio != (i & 0xf) >> 2)
 				continue;
+			if ((i < 32) && (legacy_reserved & (1 << i)))
+				continue;
 			phy = &pdev->phy[i];
 			if (!phy->vchan) {
 				phy->vchan = pchan;
 				found = phy;
+				if (i < 32)
+					legacy_unavailable |= (1 << i);
 				goto out_unlock;
 			}
 		}
@@ -272,6 +287,7 @@ static void mmp_pdma_free_phy(struct mmp_pdma_chan *pchan)
 	struct mmp_pdma_device *pdev = to_mmp_pdma_dev(pchan->chan.device);
 	unsigned long flags;
 	u32 reg;
+	int i;
 
 	if (!pchan->phy)
 		return;
@@ -281,6 +297,9 @@ static void mmp_pdma_free_phy(struct mmp_pdma_chan *pchan)
 	writel(0, pchan->phy->base + reg);
 
 	spin_lock_irqsave(&pdev->phy_lock, flags);
+	for (i = 0; i < 32; i++)
+		if (pchan->phy == &pdev->phy[i])
+			legacy_unavailable &= ~(1 << i);
 	pchan->phy->vchan = NULL;
 	pchan->phy = NULL;
 	spin_unlock_irqrestore(&pdev->phy_lock, flags);
@@ -1120,6 +1139,15 @@ bool mmp_pdma_filter_fn(struct dma_chan *chan, void *param)
 	return true;
 }
 EXPORT_SYMBOL_GPL(mmp_pdma_filter_fn);
+
+int mmp_pdma_toggle_reserved_channel(int legacy_channel)
+{
+	if (legacy_unavailable & (1 << legacy_channel))
+		return -EBUSY;
+	legacy_reserved ^= 1 << legacy_channel;
+	return 0;
+}
+EXPORT_SYMBOL_GPL(mmp_pdma_toggle_reserved_channel);
 
 module_platform_driver(mmp_pdma_driver);
 

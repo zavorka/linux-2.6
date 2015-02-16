@@ -11,6 +11,7 @@
 
 #include <linux/device.h>
 #include <linux/dma-mapping.h>
+#include <linux/dma/mmp-pdma.h>
 #include <linux/dmaengine.h>
 #include <linux/pxa2xx_ssp.h>
 #include <linux/scatterlist.h>
@@ -184,7 +185,7 @@ pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
 		cfg.dst_addr = drv_data->ssdr_physical;
 		cfg.dst_addr_width = width;
 		cfg.dst_maxburst = chip->dma_burst_size;
-		cfg.slave_id = pdata->tx_slave_id;
+		cfg.slave_id = drv_data->ssp->drcmr_tx;
 
 		sgt = &drv_data->tx_sgt;
 		nents = drv_data->tx_nents;
@@ -193,7 +194,7 @@ pxa2xx_spi_dma_prepare_one(struct driver_data *drv_data,
 		cfg.src_addr = drv_data->ssdr_physical;
 		cfg.src_addr_width = width;
 		cfg.src_maxburst = chip->dma_burst_size;
-		cfg.slave_id = pdata->rx_slave_id;
+		cfg.slave_id = drv_data->ssp->drcmr_rx;
 
 		sgt = &drv_data->rx_sgt;
 		nents = drv_data->rx_nents;
@@ -312,6 +313,8 @@ int pxa2xx_spi_dma_setup(struct driver_data *drv_data)
 	struct pxa2xx_spi_master *pdata = drv_data->master_info;
 	struct device *dev = &drv_data->pdev->dev;
 	dma_cap_mask_t mask;
+	unsigned int drcmr_rx;
+	unsigned int drcmr_tx;
 
 	dma_cap_zero(mask);
 	dma_cap_set(DMA_SLAVE, mask);
@@ -320,13 +323,15 @@ int pxa2xx_spi_dma_setup(struct driver_data *drv_data)
 	if (!drv_data->dummy)
 		return -ENOMEM;
 
+	drcmr_rx = pdata->rx_chan_id;
+	drcmr_tx = pdata->tx_chan_id;
 	drv_data->tx_chan = dma_request_slave_channel_compat(mask,
-				pxa2xx_spi_dma_filter, pdata, dev, "tx");
+				mmp_pdma_filter_fn, &drcmr_rx, dev, "tx");
 	if (!drv_data->tx_chan)
 		return -ENODEV;
 
 	drv_data->rx_chan = dma_request_slave_channel_compat(mask,
-				pxa2xx_spi_dma_filter, pdata, dev, "rx");
+				mmp_pdma_filter_fn, &drcmr_tx, dev, "rx");
 	if (!drv_data->rx_chan) {
 		dma_release_channel(drv_data->tx_chan);
 		drv_data->tx_chan = NULL;

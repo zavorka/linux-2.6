@@ -615,6 +615,10 @@ static struct pxa2xx_spi_master pxa_ssp1_master_info = {
 	.clock_enable	= CKEN_SSP,
 	.num_chipselect	= 1,
 	.enable_dma	= 1,
+	.tx_chan_id	= 14,
+	.rx_chan_id	= 13,
+	.tx_slave_id	= 14,
+	.rx_slave_id	= 13,
 };
 
 static struct pxa2xx_spi_master pxa_ssp2_master_info = {

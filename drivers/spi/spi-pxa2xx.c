@@ -1141,7 +1141,6 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
 	master->auto_runtime_pm = true;
 
 	drv_data->ssp_type = ssp->type;
-	drv_data->null_dma_buf = (u32 *)PTR_ALIGN(&drv_data[1], DMA_ALIGNMENT);
 
 	drv_data->ioaddr = ssp->mmio_base;
 	drv_data->ssdr_physical = ssp->phys_base + SSDR;
@@ -1172,7 +1171,7 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
 	if (platform_info->enable_dma) {
 		status = pxa2xx_spi_dma_setup(drv_data);
 		if (status) {
-			dev_dbg(dev, "no DMA channels available, using PIO\n");
+			dev_info(dev, "no DMA channels available, using PIO\n");
 			platform_info->enable_dma = false;
 		}
 	}
@@ -1346,7 +1345,7 @@ static int __init pxa2xx_spi_init(void)
 {
 	return platform_driver_register(&driver);
 }
-subsys_initcall(pxa2xx_spi_init);
+module_init(pxa2xx_spi_init);
 
 static void __exit pxa2xx_spi_exit(void)
 {

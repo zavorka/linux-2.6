@@ -39,7 +39,6 @@ struct driver_data {
 	/* PXA private DMA setup stuff */
 	int rx_channel;
 	int tx_channel;
-	u32 *null_dma_buf;
 
 	/* SSP register addresses */
 	void __iomem *ioaddr;

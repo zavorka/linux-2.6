@@ -807,8 +807,13 @@ static void __init h1940_map_io(void)
 
 	/* Add latch gpio chip, set latch initial value */
 	h1940_latch_control(0, 0);
-	WARN_ON(gpiochip_add_data(&h1940_latch_gpiochip, NULL));
 }
+
+static __init int h1940_gpiolib_init(void)
+{
+	return gpiochip_add_data(&h1940_latch_gpiochip, NULL);
+}
+core_initcall(h1940_gpiolib_init);
 
 static void __init h1940_init_time(void)
 {

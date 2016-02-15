@@ -203,9 +203,12 @@ static int pxa_ssp_probe(struct platform_device *pdev)
 	}
 
 	if (dev->of_node) {
+		static int port_id = 1;
 		const struct of_device_id *id =
 			of_match_device(of_match_ptr(pxa_ssp_of_ids), dev);
 		ssp->type = (int) id->data;
+		ssp->port_id = port_id;
+		port_id++;
 	} else {
 		const struct platform_device_id *id =
 			platform_get_device_id(pdev);

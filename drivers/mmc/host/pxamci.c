@@ -621,6 +621,9 @@ static int pxamci_of_init(struct platform_device *pdev)
 	pdata->gpio_card_ro =
 		of_get_named_gpio(np, "wp-gpios", 0);
 
+	/* Init default OCR mask */
+	pdata->ocr_mask = MMC_VDD_32_33 | MMC_VDD_33_34;
+
 	/* pxa-mmc specific */
 	pdata->gpio_power =
 		of_get_named_gpio(np, "pxa-mmc,gpio-power", 0);

@@ -24,6 +24,7 @@
 #include <sound/soc.h>
 #include <sound/pxa2xx-lib.h>
 #include <sound/dmaengine_pcm.h>
+#include <linux/of.h>
 
 #include <mach/hardware.h>
 #include <mach/audio.h>
@@ -302,7 +303,7 @@ static int pxa2xx_i2s_resume(struct snd_soc_dai *dai)
 
 static int pxa2xx_i2s_probe(struct snd_soc_dai *dai)
 {
-	clk_i2s = clk_get(dai->dev, "I2SCLK");
+	clk_i2s = clk_get(dai->dev, NULL);
 	if (IS_ERR(clk_i2s))
 		return PTR_ERR(clk_i2s);
 
@@ -374,11 +375,20 @@ static int pxa2xx_i2s_drv_probe(struct platform_device *pdev)
 					       &pxa_i2s_dai, 1);
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id snd_soc_pxa2xx_i2s_match[] = {
+	{ .compatible   = "mrvl,pxa2xx-i2s" },
+	{ }
+};
+MODULE_DEVICE_TABLE(of, snd_soc_pxa2xx_i2s_match);
+#endif
+
 static struct platform_driver pxa2xx_i2s_driver = {
 	.probe = pxa2xx_i2s_drv_probe,
 
 	.driver = {
 		.name = "pxa2xx-i2s",
+		.of_match_table = of_match_ptr(snd_soc_pxa2xx_i2s_match),
 	},
 };
 

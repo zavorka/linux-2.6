@@ -104,6 +104,44 @@
 
 			status = "disabled";
 		};
+
+		ssp1: ssp@41000000 {
+			compatible = "mrvl,pxa27x-ssp";
+			reg = <0x41000000 0x40>;
+			interrupts = <24>;
+			clocks = <&clks CLK_SSP1>;
+			dmas = <&pdma 13 2
+				&pdma 14 2>;
+			dma-names = "rx", "tx";
+			status = "disabled";
+		};
+		ssp2: ssp@41700000 {
+			compatible = "mrvl,pxa27x-ssp";
+			reg = <0x41700000 0x40>;
+			interrupts = <16>;
+			clocks = <&clks CLK_SSP2>;
+			dmas = <&pdma 15 2
+				&pdma 16 2>;
+			dma-names = "rx", "tx";
+			status = "disabled";
+		};
+		ssp3: ssp@41900000 {
+			compatible = "mrvl,pxa27x-ssp";
+			reg = <0x41900000 0x40>;
+			interrupts = <0>;
+			clocks = <&clks CLK_SSP3>;
+			dmas = <&pdma 66 2
+				&pdma 67 2>;
+			dma-names = "rx", "tx";
+			status = "disabled";
+		};
+		keypad: keypad@41500000 {
+			compatible = "marvell,pxa27x-keypad";
+			reg = <0x41500000 0x4d>;
+			interrupts = <4>;
+			clocks = <&clks CLK_KEYPAD>;
+			status = "disabled";
+		};
 	};
 
 	clocks {

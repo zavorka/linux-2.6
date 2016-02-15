@@ -1,0 +1,298 @@
+/*
+ *  Copyright (C) 2016 Vasily Khoruzhick <anarsoul@gmail.com>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  publishhed by the Free Software Foundation.
+ */
+
+/dts-v1/;
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include "pxa27x.dtsi"
+
+/ {
+	model = "Zipit Z2";
+	compatible = "zipitz2";
+
+	chosen {
+		bootargs = "console=ttyS2";
+	};
+
+	memory {
+		reg = <0xa0000000 0x2000000>;
+	};
+
+	pxabus {
+		nor_flash@00000000 {
+			compatible = "cfi-flash";
+			reg = <0x00000000 0x800000>;
+			linux,mtd-name = "physmap-flash.0";
+			bank-width = <2>;
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			uboot@0 {
+				label = "U-Boot Bootloader";
+				reg = <0x00000 0x40000>;
+			};
+
+			ubootenv@40000 {
+				label = "U-Boot Environment";
+				reg = <0x40000 0x20000>;
+			};
+
+			flash@60000 {
+				label = "Flash";
+				reg = <0x60000 0x780000>;
+			};
+
+			logo@7e0000  {
+				label = "U-Boot Logo";
+				reg = <0x7e0000 0x20000>;
+			};
+		};
+
+		pwri2c: i2c@40f000180 {
+			status = "okay";
+			tps65021@48 {
+				compatible = "ti,tps65021";
+				reg = <0x48>;
+				regulators {
+					tps65021_vcc_core_reg: vcc_core {
+						regulator-name = "vcc_core";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <800000>;
+						regulator-max-microvolt = <1600000>;
+					};
+					tps65021_dcdc2_reg: dcdc1 {
+						regulator-name = "DCDC2";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <3300000>;
+						regulator-max-microvolt = <3300000>;
+					};
+					tps65021_dcdc3_reg: dcdc2 {
+						regulator-name = "DCDC3";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <1800000>;
+						regulator-max-microvolt = <1800000>;
+					};
+					tps65021_ldo1_reg: ldo1 {
+						regulator-name = "LDO1";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <1000000>;
+						regulator-max-microvolt = <3150000>;
+					};
+					tps65021_ldo2_reg: ldo2 {
+						regulator-name = "LDO2";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <1050000>;
+						regulator-max-microvolt = <3300000>;
+					};
+				};
+			};
+		};
+		pxai2c1: i2c@40301680 {
+			status = "okay";
+			aer915@55 {
+				compatible = "aer915";
+				reg = <0x55>;
+				charge-gpio = <&gpio 0 GPIO_ACTIVE_LOW>;
+				i2c_reg = <2>;
+				min_voltage = <3475000>;
+				max_voltage = <4190000>;
+				batt_div = <59>;
+				batt_mult = <1000000>;
+				batt_name = "Z2";
+			};
+			wm8750: wm8750@1b {
+				#sound-dai-cells = <0>;
+				compatible = "wlf,wm8750";
+				reg = <0x1b>;
+			};
+		};
+		mmc0: mmc@41100000 {
+			pxa-mmc,detect-delay-ms = <200>;
+			//cd-gpios = <&gpio 96 GPIO_ACTIVE_HIGH>;
+			status = "okay";
+		};
+		uart0: uart@40100000 {
+			status = "okay";
+		};
+		uart1: uart@40200000 {
+			status = "okay";
+		};
+		uart2: uart@40700000 {
+			status = "okay";
+		};
+
+		display-backlight {
+			compatible = "pwm-backlight";
+			pwms = <&pwm1 1260320>;
+			brightness-levels = <0 200 300 400 500 600 700 800 900 1023>;
+			default-brightness-level = <4>;
+		};
+
+		keyboard-backlight {
+			compatible = "pwm-backlight";
+			pwms = <&pwm2 1260320>;
+			brightness-levels = <0 200 300 400 500 600 700 800 900 1023>;
+			default-brightness-level = <0>;
+		};
+		gpio-leds {
+			compatible = "gpio-leds";
+
+			green-wifi {
+				label = "z2:green:wifi";
+				gpios = <&gpio 10 GPIO_ACTIVE_LOW>;
+			};
+			green-charged {
+				label = "z2:green:charged";
+				linux,default_trigger = "mmc0";
+				gpios = <&gpio 85 GPIO_ACTIVE_LOW>;
+			};
+			amber-charging {
+				label = "z2:amber:charging";
+				linux,default_trigger = "Z2-charging-or-full";
+				gpios = <&gpio 83 GPIO_ACTIVE_LOW>;
+			};
+		};
+		gpio-keys {
+			compatible = "gpio-keys";
+			power-button {
+				label = "Power Button";
+				linux,code = <KEY_POWER>;
+				gpios = <&gpio 1 GPIO_ACTIVE_LOW>;
+				gpio-key,wakeup;
+			};
+			lid {
+				label = "Lid Switch";
+				linux,code = <SW_LID>;
+				gpios = <&gpio 98 GPIO_ACTIVE_LOW>;
+			};
+		};
+		keypad@41500000 {
+			status = "okay";
+			keypad,num-rows = <7>;
+			keypad,num-columns = <8>;
+			marvell,debounce-interval = <30>;
+			linux,keymap = <0x00000165   /* KEY_OPTION */
+					0x01000067   /* KEY_UP */
+					0x0200006c   /* KEY_DOWN */
+					0x03000069   /* KEY_LEFT */
+					0x0400006a   /* KEY_RIGHT */
+					0x0500006b   /* KEY_END */
+					0x0600004e   /* KEY_KPPLUS */
+					0x00010066   /* KEY_HOME */
+					0x01010010   /* KEY_Q */
+					0x02010017   /* KEY_I */
+					0x03010022   /* KEY_G */
+					0x0401002d   /* KEY_X */
+					0x0501001c   /* KEY_ENTER */
+					0x0601004a   /* KEY_KPMINUS */
+					0x00020068   /* KEY_PAGEUP */
+					0x01020011   /* KEY_W */
+					0x02020018   /* KEY_O */
+					0x03020023   /* KEY_H */
+					0x0402002e   /* KEY_C */
+					0x05020038   /* KEY_LEFTALT */
+					0x0003006d   /* KEY_PAGEDOWN */
+					0x01030012   /* KEY_E */
+					0x02030019   /* KEY_P */
+					0x03030024   /* KEY_J */
+					0x0403002f   /* KEY_V */
+					0x0503002a   /* KEY_LEFTSHIFT */
+					0x00040001   /* KEY_ESC */
+					0x01040013   /* KEY_R */
+					0x0204001e   /* KEY_A */
+					0x03040025   /* KEY_K */
+					0x04040030   /* KEY_B */
+					0x0504001d   /* KEY_LEFTCTRL */
+					0x0005000f   /* KEY_TAB */
+					0x01050014   /* KEY_T */
+					0x0205001f   /* KEY_S */
+					0x03050026   /* KEY_L */
+					0x04050031   /* KEY_N */
+					0x05050039   /* KEY_SPACE */
+					0x000600a6   /* KEY_STOPCD */
+					0x01060015   /* KEY_Y */
+					0x02060020   /* KEY_D */
+					0x0306000e   /* KEY_BACKSPACE */
+					0x04060032   /* KEY_M */
+					0x05060033   /* KEY_COMMA */
+					0x000700c8   /* KEY_PLAYCD */
+					0x01070016   /* KEY_U */
+					0x02070021   /* KEY_F */
+					0x0307002c   /* KEY_Z */
+					0x04070027   /* KEY_SEMICOLON */
+					0x05070034>; /* KEY_DOT */
+		};
+		ssp1: ssp@41000000 {
+			status = "okay";
+		};
+		ssp2: ssp@41700000 {
+			status = "okay";
+		};
+		i2s: pxa2xx-i2s@40400000 {
+			#sound-dai-cells = <0>;
+			status = "okay";
+		};
+		sound_plat: pxa-pcm-audio {
+			#sound-dai-cells = <0>;
+			compatible = "mrvl,pxa-pcm-audio";
+			status = "okay";
+		};
+		audio {
+			compatible = "simple-audio-card";
+			simple-audio-card,name = "Z2";
+			simple-audio-card,format = "i2s";
+			simple-audio-card,bitclock-master = <&frame_master>;
+			simple-audio-card,frame-master = <&frame_master>;
+			simple-audio-card,widgets =
+				"Headphone", "Headphones",
+				"Microphone", "Microphone",
+				"Speaker", "Speaker";
+			simple-audio-card,routing =
+			/* headphone connected to LOUT1, ROUT1 */
+			"Headphones", "LOUT1",
+			"Headphones", "ROUT1",
+
+			/* ext speaker connected to LOUT2, ROUT2  */
+			"Speaker", "ROUT2",
+			"Speaker", "LOUT2",
+
+			/* mic is connected to R input 2 - with bias */
+			"RINPUT2", "Mic Bias",
+			"Mic Bias", "Microphone";
+
+			simple-audio-card,hp-det-gpio = <&gpio 37 GPIO_ACTIVE_LOW>;
+
+			frame_master: simple-audio-card,cpu {
+				sound-dai = <&i2s>;
+			};
+			simple-audio-card,codec {
+				sound-dai = <&wm8750>;
+				system-clock-frequency = <11289600>;
+			};
+			simple-audio-card,plat {
+				sound-dai = <&sound_plat>;
+			};
+		};
+		pxa27x_udc: udc@40600000 {
+			status = "okay";
+		};
+		pxa27x_ohci: usb@4c000000 {
+			status = "okay";
+			marvell,enable-port2;
+			marvell,no-oc-protection;
+			marvell,power-on-delay = <10>;
+			marvell,power-budget = <500>;
+			marvell,port-mode = <3>;
+		};
+	};
+};

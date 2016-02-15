@@ -23,6 +23,7 @@
 #include <linux/irqchip/chained_irq.h>
 #include <linux/io.h>
 #include <linux/of.h>
+#include <linux/of_irq.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
 #include <linux/syscore_ops.h>
@@ -595,9 +596,15 @@ static int pxa_gpio_probe(struct platform_device *pdev)
 	if (!pxa_last_gpio)
 		return -EINVAL;
 
-	irq0 = platform_get_irq_byname(pdev, "gpio0");
-	irq1 = platform_get_irq_byname(pdev, "gpio1");
-	irq_mux = platform_get_irq_byname(pdev, "gpio_mux");
+	if (use_of) {
+		irq0 = of_irq_get(pdev->dev.of_node, 0);
+		irq1 = of_irq_get(pdev->dev.of_node, 1);
+		irq_mux = of_irq_get(pdev->dev.of_node, 2);
+	} else {
+		irq0 = platform_get_irq_byname(pdev, "gpio0");
+		irq1 = platform_get_irq_byname(pdev, "gpio1");
+		irq_mux = platform_get_irq_byname(pdev, "gpio_mux");
+	}
 	if ((irq0 > 0 && irq1 <= 0) || (irq0 <= 0 && irq1 > 0)
 		|| (irq_mux <= 0))
 		return -EINVAL;

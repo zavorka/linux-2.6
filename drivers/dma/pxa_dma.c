@@ -1086,7 +1086,7 @@ pxad_prep_dma_cyclic(struct dma_chan *dchan,
 		return NULL;
 
 	pxad_get_config(chan, dir, &dcmd, &dsadr, &dtadr);
-	dcmd |= PXA_DCMD_ENDIRQEN | (PXA_DCMD_LENGTH | period_len);
+	dcmd |= PXA_DCMD_ENDIRQEN | (PXA_DCMD_LENGTH & period_len);
 	dev_dbg(&chan->vc.chan.dev->device,
 		"%s(): buf_addr=0x%lx len=%zu period=%zu dir=%d flags=%lx\n",
 		__func__, (unsigned long)buf_addr, len, period_len, dir, flags);

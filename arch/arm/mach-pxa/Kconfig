@@ -607,13 +607,6 @@ config MACH_E800
 config MACH_ZIPIT2
 	bool "Zipit Z2 Handheld"
 	select PXA27x
-
-config Z2_USB_SWITCH
-	tristate "Control the state of USB port on Zipit Z2"
-	depends on MACH_ZIPIT2
-	help
-	  This is a simple driver that is able to control
-	  usb mode of Zipit Z2
 endmenu
 
 config PXA25x

@@ -1529,7 +1529,7 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
 	if (platform_info->enable_dma) {
 		status = pxa2xx_spi_dma_setup(drv_data);
 		if (status) {
-			dev_dbg(dev, "no DMA channels available, using PIO\n");
+			dev_warn(dev, "no DMA channels available, using PIO\n");
 			platform_info->enable_dma = false;
 		}
 	}
@@ -1733,7 +1733,7 @@ static int __init pxa2xx_spi_init(void)
 {
 	return platform_driver_register(&driver);
 }
-subsys_initcall(pxa2xx_spi_init);
+module_init(pxa2xx_spi_init);
 
 static void __exit pxa2xx_spi_exit(void)
 {

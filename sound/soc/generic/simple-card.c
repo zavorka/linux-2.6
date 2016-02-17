@@ -117,6 +117,11 @@ static struct snd_soc_jack_pin simple_card_hp_jack_pins[] = {
 		.pin = "Headphones",
 		.mask = SND_JACK_HEADPHONE,
 	},
+	{
+		.pin = "Speaker",
+		.mask = SND_JACK_HEADPHONE,
+		.invert = 1,
+	}
 };
 static struct snd_soc_jack_gpio simple_card_hp_jack_gpio = {
 	.name = "Headphone detection",

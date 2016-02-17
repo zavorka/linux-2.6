@@ -110,8 +110,8 @@
 			reg = <0x41000000 0x40>;
 			interrupts = <24>;
 			clocks = <&clks CLK_SSP1>;
-			dmas = <&pdma 13 3
-				&pdma 14 3>;
+			dmas = <&pdma 13 2
+				&pdma 14 2>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
@@ -120,8 +120,8 @@
 			reg = <0x41700000 0x40>;
 			interrupts = <16>;
 			clocks = <&clks CLK_SSP2>;
-			dmas = <&pdma 15 3
-				&pdma 16 3>;
+			dmas = <&pdma 15 2
+				&pdma 16 2>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};
@@ -130,8 +130,8 @@
 			reg = <0x41900000 0x40>;
 			interrupts = <0>;
 			clocks = <&clks CLK_SSP3>;
-			dmas = <&pdma 66 3
-				&pdma 67 3>;
+			dmas = <&pdma 66 2
+				&pdma 67 2>;
 			dma-names = "rx", "tx";
 			status = "disabled";
 		};

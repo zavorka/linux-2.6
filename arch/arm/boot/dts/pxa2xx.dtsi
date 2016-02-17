@@ -136,7 +136,7 @@
 		};
 
 		i2s: pxa2xx-i2s@40400000 {
-			compatible = "pxa2xx-i2s";
+			compatible = "mrvl,pxa2xx-i2s";
 			reg = <0x40400000 84>;
 			interrupts = <13>;
 			clocks = <&clks CLK_I2S>;

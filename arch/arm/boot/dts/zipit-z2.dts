@@ -55,10 +55,51 @@
 
 		pwri2c: i2c@40f000180 {
 			status = "okay";
+			tps65021@48 {
+				compatible = "ti,tps65021";
+				reg = <0x48>;
+				regulators {
+					tps65021_vcc_core_reg: vcc_core {
+						regulator-name = "vcc_core";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <800000>;
+						regulator-max-microvolt = <1600000>;
+					};
+					tps65021_dcdc2_reg: dcdc1 {
+						regulator-name = "DCDC2";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <3300000>;
+						regulator-max-microvolt = <3300000>;
+					};
+					tps65021_dcdc3_reg: dcdc2 {
+						regulator-name = "DCDC3";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <1800000>;
+						regulator-max-microvolt = <1800000>;
+					};
+					tps65021_ldo1_reg: ldo1 {
+						regulator-name = "LDO1";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <1000000>;
+						regulator-max-microvolt = <3150000>;
+					};
+					tps65021_ldo2_reg: ldo2 {
+						regulator-name = "LDO2";
+						regulator-always-on;
+						regulator-boot-on;
+						regulator-min-microvolt = <1050000>;
+						regulator-max-microvolt = <3300000>;
+					};
+				};
+			};
 		};
 		pxai2c1: i2c@40301680 {
 			status = "okay";
-			aer915@0x55 {
+			aer915@55 {
 				compatible = "aer915";
 				reg = <0x55>;
 				charge-gpio = <&gpio 0 GPIO_ACTIVE_LOW>;
@@ -69,13 +110,11 @@
 				batt_mult = <1000000>;
 				batt_name = "Z2";
 			};
-			wm8750@0x1b {
+			wm8750: wm8750@1b {
+				#sound-dai-cells = <0>;
 				compatible = "wlf,wm8750";
 				reg = <0x1b>;
 			};
-		};
-		pxa27x_udc: udc@40600000 {
-			status = "okay";
 		};
 		mmc0: mmc@41100000 {
 			pxa-mmc,detect-delay-ms = <200>;
@@ -97,7 +136,6 @@
 			pwms = <&pwm1 1260320>;
 			brightness-levels = <0 200 300 400 500 600 700 800 900 1023>;
 			default-brightness-level = <4>;
-			status = "okay";
 		};
 
 		keyboard-backlight {
@@ -105,7 +143,6 @@
 			pwms = <&pwm2 1260320>;
 			brightness-levels = <0 200 300 400 500 600 700 800 900 1023>;
 			default-brightness-level = <0>;
-			status = "okay";
 		};
 		gpio-leds {
 			compatible = "gpio-leds";
@@ -202,12 +239,60 @@
 			status = "okay";
 		};
 		i2s: pxa2xx-i2s@40400000 {
+			#sound-dai-cells = <0>;
 			status = "okay";
 		};
-		pxa-pcm-audio {
+		sound_plat: pxa-pcm-audio {
+			#sound-dai-cells = <0>;
 			compatible = "mrvl,pxa-pcm-audio";
 			status = "okay";
 		};
+		audio {
+			compatible = "simple-audio-card";
+			simple-audio-card,name = "Z2";
+			simple-audio-card,format = "i2s";
+			simple-audio-card,bitclock-master = <&frame_master>;
+			simple-audio-card,frame-master = <&frame_master>;
+			simple-audio-card,widgets =
+				"Headphone", "Headphones",
+				"Microphone", "Microphone",
+				"Speaker", "Speaker";
+			simple-audio-card,routing =
+			/* headphone connected to LOUT1, ROUT1 */
+			"Headphones", "LOUT1",
+			"Headphones", "ROUT1",
 
+			/* ext speaker connected to LOUT2, ROUT2  */
+			"Speaker", "ROUT2",
+			"Speaker", "LOUT2",
+
+			/* mic is connected to R input 2 - with bias */
+			"RINPUT2", "Mic Bias",
+			"Mic Bias", "Microphone";
+
+			simple-audio-card,hp-det-gpio = <&gpio 37 GPIO_ACTIVE_LOW>;
+
+			frame_master: simple-audio-card,cpu {
+				sound-dai = <&i2s>;
+			};
+			simple-audio-card,codec {
+				sound-dai = <&wm8750>;
+				system-clock-frequency = <11289600>;
+			};
+			simple-audio-card,plat {
+				sound-dai = <&sound_plat>;
+			};
+		};
+		pxa27x_udc: udc@40600000 {
+			status = "okay";
+		};
+		pxa27x_ohci: usb@4c000000 {
+			status = "okay";
+			marvell,enable-port2;
+			marvell,no-oc-protection;
+			marvell,power-on-delay = <10>;
+			marvell,power-budget = <500>;
+			marvell,port-mode = <3>;
+		};
 	};
 };

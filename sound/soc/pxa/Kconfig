@@ -28,7 +28,9 @@ config SND_PXA2XX_SOC_AC97
 	select SND_SOC_AC97_BUS
 
 config SND_PXA2XX_SOC_I2S
-	tristate
+	tristate "PXA2XX I2S driver"
+	help
+	  Say Y if you want ot enable PXA2XX I2S driver
 
 config SND_PXA_SOC_SSP
 	tristate

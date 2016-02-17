@@ -385,7 +385,7 @@ static int pxa2xx_i2s_drv_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id snd_soc_pxa2xx_i2s_match[] = {
-	{ .compatible   = "pxa2xx-i2s" },
+	{ .compatible   = "mrvl,pxa2xx-i2s" },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, snd_soc_pxa2xx_i2s_match);

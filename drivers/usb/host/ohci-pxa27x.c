@@ -564,6 +564,8 @@ static int ohci_hcd_pxa27x_drv_suspend(struct device *dev)
 	if (ret)
 		return ret;
 
+	disable_irq(hcd->irq);
+
 	pxa27x_stop_hc(pxa_ohci, dev);
 	return ret;
 }
@@ -586,6 +588,8 @@ static int ohci_hcd_pxa27x_drv_resume(struct device *dev)
 
 	/* Select Power Management Mode */
 	pxa27x_ohci_select_pmm(pxa_ohci, inf->port_mode);
+
+	enable_irq(hcd->irq);
 
 	ohci_resume(hcd, false);
 	return 0;

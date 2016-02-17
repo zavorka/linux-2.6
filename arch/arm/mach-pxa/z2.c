@@ -4,6 +4,7 @@
  *  Support for the Zipit Z2 Handheld device.
  *
  *  Copyright (C) 2009-2010 Marek Vasut <marek.vasut@gmail.com>
+ *  Copyright (C) 2016 Vasily Khoruzhick <anarsoul@gmail.com>
  *
  *  Based on research and code by: Ken McGuire
  *  Based on mainstone.c as modified for the Zipit Z2.
@@ -27,6 +28,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/i2c/pxa-i2c.h>
 #include <linux/of_platform.h>
+#include <linux/dma/pxa-dma.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
@@ -36,7 +38,6 @@
 #include <mach/z2.h>
 #include <linux/platform_data/video-pxafb.h>
 #include <mach/pm.h>
-#include <linux/platform_data/usb-ohci-pxa27x.h>
 
 #include "generic.h"
 #include "devices.h"
@@ -263,9 +264,21 @@ static struct spi_board_info spi_board_info[] __initdata = {
 },
 };
 
+static struct pxad_param ssp1_tx = {
+	.drcmr = 14,
+	.prio = 0,
+};
+static struct pxad_param ssp1_rx = {
+	.drcmr = 13,
+	.prio = 0,
+};
+
 static struct pxa2xx_spi_master pxa_ssp1_master_info = {
 	.num_chipselect	= 1,
 	.enable_dma	= 1,
+	.dma_filter	= pxad_filter_fn,
+	.tx_param	= &ssp1_tx,
+	.rx_param	= &ssp1_rx,
 };
 
 static struct pxa2xx_spi_master pxa_ssp2_master_info = {
@@ -282,119 +295,6 @@ static void __init z2_spi_init(void)
 #else
 static inline void z2_spi_init(void) {}
 #endif
-
-/******************************************************************************
- * Core power regulator
- ******************************************************************************/
-#if defined(CONFIG_REGULATOR_TPS65023) || \
-	defined(CONFIG_REGULATOR_TPS65023_MODULE)
-static struct regulator_consumer_supply z2_tps65021_consumers[] = {
-	REGULATOR_SUPPLY("vcc_core", NULL),
-};
-
-static struct regulator_init_data z2_tps65021_info[] = {
-	{
-		.constraints = {
-			.name		= "vcc_core range",
-			.min_uV		= 800000,
-			.max_uV		= 1600000,
-			.always_on	= 1,
-			.valid_ops_mask	= REGULATOR_CHANGE_VOLTAGE,
-		},
-		.consumer_supplies	= z2_tps65021_consumers,
-		.num_consumer_supplies	= ARRAY_SIZE(z2_tps65021_consumers),
-	}, {
-		.constraints = {
-			.name		= "DCDC2",
-			.min_uV		= 3300000,
-			.max_uV		= 3300000,
-			.always_on	= 1,
-		},
-	}, {
-		.constraints = {
-			.name		= "DCDC3",
-			.min_uV		= 1800000,
-			.max_uV		= 1800000,
-			.always_on	= 1,
-		},
-	}, {
-		.constraints = {
-			.name		= "LDO1",
-			.min_uV		= 1000000,
-			.max_uV		= 3150000,
-			.always_on	= 1,
-		},
-	}, {
-		.constraints = {
-			.name		= "LDO2",
-			.min_uV		= 1050000,
-			.max_uV		= 3300000,
-			.always_on	= 1,
-		},
-	}
-};
-
-static struct i2c_board_info __initdata z2_pi2c_board_info[] = {
-	{
-		I2C_BOARD_INFO("tps65021", 0x48),
-		.platform_data	= &z2_tps65021_info,
-	},
-};
-
-static void __init z2_pmic_init(void)
-{
-	//pxa27x_set_i2c_power_info(NULL);
-	i2c_register_board_info(1, ARRAY_AND_SIZE(z2_pi2c_board_info));
-}
-#else
-static inline void z2_pmic_init(void) {}
-#endif
-
-/******************************************************************************
- * USB Switch
- ******************************************************************************/
-static struct platform_device z2_usb_switch = {
-	.name		= "z2-usb-switch",
-	.id		= -1,
-};
-
-static void __init z2_usb_switch_init(void)
-{
-	platform_device_register(&z2_usb_switch);
-}
-
-/******************************************************************************
- * USB Gadget
- ******************************************************************************/
-#if defined(CONFIG_USB_GADGET_PXA27X) \
-	|| defined(CONFIG_USB_GADGET_PXA27X_MODULE)
-static int z2_udc_is_connected(void)
-{
-	return 1;
-}
-
-static struct pxa2xx_udc_mach_info z2_udc_info __initdata = {
-	.udc_is_connected	= z2_udc_is_connected,
-	.gpio_pullup		= -1,
-};
-
-static void __init z2_udc_init(void)
-{
-	pxa_set_udc_info(&z2_udc_info);
-}
-#else
-static inline void z2_udc_init(void) {}
-#endif
-
-/******************************************************************************
- * USB Host (OHCI)
- ******************************************************************************/
-static struct pxaohci_platform_data z2_ohci_platform_data = {
-	.port_mode	= PMM_PERPORT_MODE,
-	.flags		= ENABLE_PORT2 | NO_OC_PROTECTION,
-	.power_on_delay	= 10,
-	.power_budget	= 500,
-};
 
 #ifdef CONFIG_PM
 static void z2_power_off(void)
@@ -419,14 +319,9 @@ static void __init z2_init(void)
 	of_platform_populate(NULL, of_default_bus_match_table,
                                         NULL, NULL);
 	pxa2xx_mfp_config(ARRAY_AND_SIZE(z2_pin_config));
-#if 0
-	pxa_set_ohci_info(&z2_ohci_platform_data);
-#endif
 
 	z2_lcd_init();
 	z2_spi_init();
-	//z2_pmic_init();
-	//z2_usb_switch_init();
 
 	pm_power_off = z2_power_off;
 }

@@ -103,6 +103,8 @@
 				compatible = "aer915";
 				reg = <0x55>;
 				charge-gpio = <&gpio 0 GPIO_ACTIVE_LOW>;
+				charge-stat-1 = <&gpio 99 GPIO_OPEN_DRAIN>;
+				charge-stat-2 = <&gpio 95 GPIO_OPEN_DRAIN>;
 				i2c_reg = <2>;
 				min_voltage = <3475000>;
 				max_voltage = <4190000>;

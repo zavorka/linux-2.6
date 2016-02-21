@@ -94,18 +94,30 @@ static void z2_batt_ext_power_changed(struct power_supply *batt_ps)
 
 static void z2_batt_update(struct z2_charger *charger)
 {
-	int old_status = charger->bat_status;
+	int old_status = charger->bat_status, val1 = 1, val2 = 1;
 	struct z2_battery_info *info;
 
 	info = charger->info;
 
 	mutex_lock(&charger->work_lock);
 
-	charger->bat_status = (info->charge_gpio >= 0) ?
-		(gpio_get_value(info->charge_gpio) ?
-		POWER_SUPPLY_STATUS_CHARGING :
-		POWER_SUPPLY_STATUS_DISCHARGING) :
-		POWER_SUPPLY_STATUS_UNKNOWN;
+	if (info->charge_stat_1 >= 0 && info->charge_stat_2 >= 0){
+		val1 = gpio_get_value(info->charge_stat_1);
+		val2 = gpio_get_value(info->charge_stat_2);
+
+		if (val1 == 0 && val2 == 0){
+			charger->bat_status = POWER_SUPPLY_STATUS_CHARGING;
+		}
+		else if (val1 == 0 && val2 == 1){
+			charger->bat_status = POWER_SUPPLY_STATUS_CHARGING;
+		}
+		else if (val1 == 1 && val2 == 0){
+			charger->bat_status = POWER_SUPPLY_STATUS_FULL;
+		}
+		else{
+			charger->bat_status = POWER_SUPPLY_STATUS_DISCHARGING;
+		}
+	}
 
 	if (old_status != charger->bat_status) {
 		pr_debug("%s: %i -> %i\n", charger->batt_ps->desc->name,
@@ -193,6 +205,8 @@ struct z2_battery_info *z2_batt_parse_dt(struct device *dev)
 		return info;
 	of_property_read_u32(dev->of_node, "i2c_reg", &info->batt_I2C_reg);
 	info->charge_gpio = of_get_named_gpio(dev->of_node, "charge-gpio", 0);
+	info->charge_stat_1 = of_get_named_gpio(dev->of_node, "charge-stat-1", 0);
+	info->charge_stat_2 = of_get_named_gpio(dev->of_node, "charge-stat-2", 0);
 	of_property_read_u32(dev->of_node, "min_voltage", &info->min_voltage);
 	of_property_read_u32(dev->of_node, "max_voltage", &info->max_voltage);
 	of_property_read_u32(dev->of_node, "batt_div", &info->batt_div);
@@ -206,7 +220,7 @@ struct z2_battery_info *z2_batt_parse_dt(struct device *dev)
 static int z2_batt_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
 {
-	int ret = 0;
+	int ret = 0, ret1 = 0, ret2 = 0;
 	int props = 1;	/* POWER_SUPPLY_PROP_PRESENT */
 	struct z2_charger *charger;
 	struct device *dev = &client->dev;
@@ -241,21 +255,28 @@ static int z2_batt_probe(struct i2c_client *client,
 		goto err;
 	}
 
-	if (info->charge_gpio >= 0) {
-		ret = gpio_request(info->charge_gpio, "BATT CHRG");
-		if (ret)
+	if (info->charge_stat_1 >= 0 && info->charge_stat_2 >= 0) {
+		ret1 = gpio_request(info->charge_stat_1, "BATT STAT 1");
+		ret2 = gpio_request(info->charge_stat_2, "BATT STAT 2");
+		if (ret1 || ret2)
 			goto err;
 
-		ret = gpio_direction_input(info->charge_gpio);
-		if (ret)
+		ret1 = gpio_direction_input(info->charge_stat_1);
+		ret2 = gpio_direction_input(info->charge_stat_2);
+		if (ret1 || ret2)
 			goto err2;
 
-		irq_set_irq_type(gpio_to_irq(info->charge_gpio),
+		irq_set_irq_type(gpio_to_irq(info->charge_stat_1),
 				 IRQ_TYPE_EDGE_BOTH);
-		ret = request_irq(gpio_to_irq(info->charge_gpio),
+		ret1 = request_irq(gpio_to_irq(info->charge_stat_1),
 				z2_charge_switch_irq, 0,
-				"AC Detect", charger);
-		if (ret)
+				"Charge Status GPIO 1", charger);
+		irq_set_irq_type(gpio_to_irq(info->charge_stat_2),
+				 IRQ_TYPE_EDGE_BOTH);
+		ret2 = request_irq(gpio_to_irq(info->charge_stat_2),
+				z2_charge_switch_irq, 0,
+				"Charge Status GPIO 2", charger);
+		if (ret1 || ret2)
 			goto err3;
 	}
 
@@ -280,11 +301,15 @@ static int z2_batt_probe(struct i2c_client *client,
 err4:
 	kfree(charger->batt_ps_desc.properties);
 err3:
-	if (info->charge_gpio >= 0 && gpio_is_valid(info->charge_gpio))
-		free_irq(gpio_to_irq(info->charge_gpio), charger);
+	if (info->charge_stat_1 >= 0 && gpio_is_valid(info->charge_stat_1))
+		free_irq(gpio_to_irq(info->charge_stat_1), charger);
+	if (info->charge_stat_2 >= 0 && gpio_is_valid(info->charge_stat_2))
+		free_irq(gpio_to_irq(info->charge_stat_2), charger);
 err2:
-	if (info->charge_gpio >= 0 && gpio_is_valid(info->charge_gpio))
-		gpio_free(info->charge_gpio);
+	if (info->charge_stat_1 >= 0 && gpio_is_valid(info->charge_stat_1))
+		gpio_free(info->charge_stat_1);
+	if (info->charge_stat_2 >= 0 && gpio_is_valid(info->charge_stat_2))
+		gpio_free(info->charge_stat_2);
 err:
 	kfree(charger);
 	return ret;
@@ -299,9 +324,13 @@ static int z2_batt_remove(struct i2c_client *client)
 	power_supply_unregister(charger->batt_ps);
 
 	kfree(charger->batt_ps_desc.properties);
-	if (info->charge_gpio >= 0 && gpio_is_valid(info->charge_gpio)) {
-		free_irq(gpio_to_irq(info->charge_gpio), charger);
-		gpio_free(info->charge_gpio);
+	if (info->charge_stat_1 >= 0 && gpio_is_valid(info->charge_stat_1)) {
+		free_irq(gpio_to_irq(info->charge_stat_1), charger);
+		gpio_free(info->charge_stat_1);
+	}
+	if (info->charge_stat_2 >= 0 && gpio_is_valid(info->charge_stat_2)) {
+		free_irq(gpio_to_irq(info->charge_stat_2), charger);
+		gpio_free(info->charge_stat_2);
 	}
 
 	kfree(charger);

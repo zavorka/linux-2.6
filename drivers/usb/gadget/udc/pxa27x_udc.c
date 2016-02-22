@@ -78,6 +78,10 @@
 #define	DRIVER_VERSION	"2008-04-18"
 #define	DRIVER_DESC	"PXA 27x USB Device Controller driver"
 
+static bool skip_portmode_init;
+module_param(skip_portmode_init, bool, 0644);
+MODULE_PARM_DESC(skip_portmode_init, "Don't force PORT2 mode to device");
+
 static const char driver_name[] = "pxa27x_udc";
 static struct pxa_udc *the_controller;
 
@@ -2556,15 +2560,17 @@ static int pxa_udc_probe(struct platform_device *pdev)
 
 	pxa_init_debugfs(udc);
 
-	/* Switch to device mode by default */
-	v = udc_readl(udc, UP2OCR);
-	/* Disable D+ and D- pull down,
-	   Transceiver output select = 0 -> UDC
-	 */
-	v &= ~(UP2OCR_HXS |UP2OCR_DPPDE | UP2OCR_DMPDE);
-	/* Enable transceiver */
-	v |= UP2OCR_HXOE;
-	udc_writel(udc, UP2OCR, v);
+	if (!skip_portmode_init) {
+		/* Switch to device mode by default */
+		v = udc_readl(udc, UP2OCR);
+		/* Disable D+ and D- pull down,
+		   Transceiver output select = 0 -> UDC
+		 */
+		v &= ~(UP2OCR_HXS |UP2OCR_DPPDE | UP2OCR_DMPDE);
+		/* Enable transceiver */
+		v |= UP2OCR_HXOE;
+		udc_writel(udc, UP2OCR, v);
+	}
 
 	if (should_enable_udc(udc))
 		udc_enable(udc);

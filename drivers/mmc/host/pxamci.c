@@ -52,6 +52,14 @@
 #define mmc_has_26MHz()		(cpu_is_pxa300() || cpu_is_pxa310() \
 				|| cpu_is_pxa935())
 
+static bool force_1_bit;
+module_param(force_1_bit, bool, 0644);
+MODULE_PARM_DESC(force_1_bit, "Force 1 bit data transfers.");
+
+static bool ignore_crc_errors;
+module_param(ignore_crc_errors, bool, 0644);
+MODULE_PARM_DESC(ignore_crc_errors, "Ignore CRC errors.");
+
 struct pxamci_host {
 	struct mmc_host		*mmc;
 	spinlock_t		lock;
@@ -329,8 +337,9 @@ static int pxamci_cmd_done(struct pxamci_host *host, unsigned int stat)
 		 * A bogus CRC error can appear if the msb of a 136 bit
 		 * response is a one.
 		 */
-		if (cpu_is_pxa27x() &&
-		    (cmd->flags & MMC_RSP_136 && cmd->resp[0] & 0x80000000))
+		if ((cpu_is_pxa27x() &&
+		    (cmd->flags & MMC_RSP_136 && cmd->resp[0] & 0x80000000)) ||
+		    ignore_crc_errors)
 			pr_debug("ignoring CRC from command %d - *risky*\n", cmd->opcode);
 		else
 			cmd->error = -EILSEQ;
@@ -369,8 +378,15 @@ static int pxamci_data_done(struct pxamci_host *host, unsigned int stat)
 
 	if (stat & STAT_READ_TIME_OUT)
 		data->error = -ETIMEDOUT;
-	else if (stat & (STAT_CRC_READ_ERROR|STAT_CRC_WRITE_ERROR))
-		data->error = -EILSEQ;
+	else if (stat & (STAT_CRC_READ_ERROR|STAT_CRC_WRITE_ERROR)) {
+		if (ignore_crc_errors)
+			dev_dbg(mmc_dev(host->mmc),
+				"Ignoring data xfer crc error on %s\n",
+				data->flags & MMC_DATA_READ ?
+				"read" : "write");
+		else
+			data->error = -EILSEQ;
+	}
 
 	/*
 	 * There appears to be a hardware design bug here.  There seems to
@@ -724,6 +740,14 @@ static int pxamci_probe(struct platform_device *pdev)
 			mmc->caps |= MMC_CAP_MMC_HIGHSPEED |
 				     MMC_CAP_SD_HIGHSPEED;
 	}
+
+	if (force_1_bit) {
+		dev_warn(mmc_dev(host->mmc), "Forcing 1-bit data transfers\n");
+		mmc->caps &= ~MMC_CAP_4_BIT_DATA;
+	}
+
+	if (ignore_crc_errors)
+		dev_warn(mmc_dev(host->mmc), "Will ignore CRC errors for data xfers\n");
 
 	spin_lock_init(&host->lock);
 	host->res = r;

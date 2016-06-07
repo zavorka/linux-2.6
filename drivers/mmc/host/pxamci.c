@@ -634,6 +634,11 @@ static int pxamci_of_init(struct platform_device *pdev)
 
 	pdata->gpio_card_detect =
 		of_get_named_gpio(np, "cd-gpios", 0);
+	if (of_find_property(np, "cd-invert", NULL)){
+		pdata->gpio_card_detect_invert = true;
+	} else {
+		pdata->gpio_card_detect_invert = false;
+	}
 	pdata->gpio_card_ro =
 		of_get_named_gpio(np, "wp-gpios", 0);
 
@@ -840,7 +845,8 @@ static int pxamci_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "Failed requesting gpio_cd %d\n", gpio_cd);
 		goto out;
-	}
+	} else if(host->pdata->gpio_card_detect_invert)
+		mmc->caps2 |= MMC_CAP2_CD_ACTIVE_HIGH;
 
 	if (host->pdata && host->pdata->init)
 		host->pdata->init(&pdev->dev, pxamci_detect_irq, mmc);

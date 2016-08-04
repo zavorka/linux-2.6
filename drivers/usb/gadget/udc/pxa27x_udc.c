@@ -78,9 +78,9 @@
 #define	DRIVER_VERSION	"2008-04-18"
 #define	DRIVER_DESC	"PXA 27x USB Device Controller driver"
 
-static bool skip_portmode_init;
-module_param(skip_portmode_init, bool, 0644);
-MODULE_PARM_DESC(skip_portmode_init, "Don't force PORT2 mode to device");
+static bool host_portmode_init;
+module_param(host_portmode_init, bool, 0644);
+MODULE_PARM_DESC(host_portmode_init, "Force PORT2 mode to host");
 
 static const char driver_name[] = "pxa27x_udc";
 static struct pxa_udc *the_controller;
@@ -2560,7 +2560,7 @@ static int pxa_udc_probe(struct platform_device *pdev)
 
 	pxa_init_debugfs(udc);
 
-	if (!skip_portmode_init) {
+	if (!host_portmode_init) {
 		/* Switch to device mode by default */
 		v = udc_readl(udc, UP2OCR);
 		/* Disable D+ and D- pull down,
@@ -2570,6 +2570,20 @@ static int pxa_udc_probe(struct platform_device *pdev)
 		/* Enable transceiver */
 		v |= UP2OCR_HXOE;
 		udc_writel(udc, UP2OCR, v);
+		dev_warn(&pdev->dev, "started device mode");
+	} else {
+		/* Switch to host mode */
+		v = udc_readl(udc, UP2OCR);
+		/* Enable D+ and D- pull down,
+		   Transceiver output select = 1 -> Host
+		 */
+		v |= (UP2OCR_HXS |UP2OCR_DPPDE | UP2OCR_DMPDE);
+		/* Disable D+ pull up */
+		v &= ~(UP2OCR_DPPUE);
+		/* Enable transceiver */
+		v |= UP2OCR_HXOE;;
+		udc_writel(udc, UP2OCR, v);
+		dev_warn(&pdev->dev, "started host mode");
 	}
 
 	if (should_enable_udc(udc))

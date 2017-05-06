@@ -1161,6 +1161,10 @@ static const struct sun4i_tcon_quirks sun8i_a83t_lcd_quirks = {
 	.supports_lvds		= true,
 };
 
+static const struct sun4i_tcon_quirks sun8i_a83t_tcon0_quirks = {
+	.has_channel_0	= true,
+};
+
 static const struct sun4i_tcon_quirks sun8i_v3s_quirks = {
 	/* nothing is supported */
 	.has_channel_0		= true,
@@ -1170,7 +1174,14 @@ static const struct sun4i_tcon_quirks sun8i_h3_quirks = {
 	.has_channel_1		= true,
 };
 
-/* sun4i_drv uses this list to check if a device node is a TCON */
+static const struct sun4i_tcon_quirks sun50i_a64_tcon0_quirks = {
+	.has_channel_0	= true,
+};
+
+static const struct sun4i_tcon_quirks sun50i_a64_tcon1_quirks = {
+	.has_channel_1	= true,
+};
+
 const struct of_device_id sun4i_tcon_of_table[] = {
 	{ .compatible = "allwinner,sun4i-a10-tcon", .data = &sun4i_a10_quirks },
 	{ .compatible = "allwinner,sun5i-a13-tcon", .data = &sun5i_a13_quirks },
@@ -1181,6 +1192,14 @@ const struct of_device_id sun4i_tcon_of_table[] = {
 	{ .compatible = "allwinner,sun8i-a83t-tcon-lcd", .data = &sun8i_a83t_lcd_quirks },
 	{ .compatible = "allwinner,sun8i-h3-tcon", .data = &sun8i_h3_quirks },
 	{ .compatible = "allwinner,sun8i-v3s-tcon", .data = &sun8i_v3s_quirks },
+	{
+		.compatible = "allwinner,sun50i-a64-tcon0",
+		.data = &sun50i_a64_tcon0_quirks
+	},
+	{
+		.compatible = "allwinner,sun50i-a64-tcon1",
+		.data = &sun50i_a64_tcon1_quirks
+	},
 	{ }
 };
 MODULE_DEVICE_TABLE(of, sun4i_tcon_of_table);

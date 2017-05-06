@@ -76,6 +76,10 @@
 	};
 };
 
+&de {
+	status = "okay";
+};
+
 &ehci0 {
 	status = "okay";
 };
@@ -90,7 +94,11 @@
 	phy-mode = "rmii";
 	phy-handle = <&ext_rmii_phy1>;
 	status = "okay";
+};
 
+&hdmi {
+	hvcc-supply = <&reg_dldo1>;
+	status = "okay";
 };
 
 &i2c1 {
@@ -108,6 +116,10 @@
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <1>;
 	};
+};
+
+&mixer1 {
+	status = "okay";
 };
 
 &mmc0 {
@@ -250,6 +262,10 @@
 
 &reg_rtc_ldo {
 	regulator-name = "vcc-rtc";
+};
+
+&tcon1 {
+	status = "okay";
 };
 
 /* On Exp and Euler connectors */

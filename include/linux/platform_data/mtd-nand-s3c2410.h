@@ -41,6 +41,7 @@ struct s3c2410_nand_set {
 	int			*nr_map;
 	struct mtd_partition	*partitions;
 	struct device_node	*of_node;
+	struct mtd_ooblayout_ops *ooblayout_ops;
 };
 
 struct s3c2410_platform_nand {

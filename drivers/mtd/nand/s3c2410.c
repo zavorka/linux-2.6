@@ -910,6 +910,9 @@ static void s3c2410_nand_init_chip(struct s3c2410_nand_info *info,
 
 	chip->ecc.mode = info->platform->ecc_mode;
 
+	if (set->ooblayout_ops)
+		mtd_set_ooblayout(nand_to_mtd(chip), set->ooblayout_ops);
+
 	/*
 	 * If you use u-boot BBT creation code, specifying this flag will
 	 * let the kernel fish out the BBT from the NAND.

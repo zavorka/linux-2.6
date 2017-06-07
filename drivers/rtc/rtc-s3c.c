@@ -32,6 +32,14 @@
 #include <asm/irq.h>
 #include "rtc-s3c.h"
 
+enum s3c_cpu_type {
+	TYPE_S3C2410,
+	TYPE_S3C2416,
+	TYPE_S3C2443,
+	TYPE_S3C64XX,
+	TYPE_LAST
+};
+
 struct s3c_rtc {
 	struct device *dev;
 	struct rtc_device *rtc;
@@ -436,13 +444,23 @@ static int s3c_rtc_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id s3c_rtc_dt_match[];
+static struct s3c_rtc_data *s3cxxx_rtc_data[];
 
 static struct s3c_rtc_data *s3c_rtc_get_data(struct platform_device *pdev)
 {
+	unsigned idx;
+#ifdef CONFIG_OF
 	const struct of_device_id *match;
 
-	match = of_match_node(s3c_rtc_dt_match, pdev->dev.of_node);
-	return (struct s3c_rtc_data *)match->data;
+	if (pdev->dev.of_node) {
+		match = of_match_node(s3c_rtc_dt_match, pdev->dev.of_node);
+		return (struct s3c_rtc_data *)match->data;
+	}
+#endif
+	idx = platform_get_device_id(pdev)->driver_data;
+	if (idx >= TYPE_LAST)
+		return NULL;
+	return s3cxxx_rtc_data[idx];
 }
 
 static int s3c_rtc_probe(struct platform_device *pdev)
@@ -820,9 +838,36 @@ static const struct of_device_id s3c_rtc_dt_match[] = {
 };
 MODULE_DEVICE_TABLE(of, s3c_rtc_dt_match);
 
+static struct s3c_rtc_data *s3cxxx_rtc_data[] = {
+	(void *)&s3c2410_rtc_data,
+	(void *)&s3c2416_rtc_data,
+	(void *)&s3c2443_rtc_data,
+	(void *)&s3c6410_rtc_data,
+};
+
+static struct platform_device_id s3c_rtc_driver_ids[] = {
+	{
+	       .name           = "s3c2410-rtc",
+	       .driver_data    = TYPE_S3C2410,
+	}, {
+	       .name           = "s3c2416-rtc",
+	       .driver_data    = TYPE_S3C2416,
+	}, {
+	       .name           = "s3c2443-rtc",
+	       .driver_data    = TYPE_S3C2443,
+	}, {
+	       .name           = "s3c64xx-rtc",
+	       .driver_data    = TYPE_S3C64XX,
+	},
+	{ }
+};
+
+MODULE_DEVICE_TABLE(platform, s3c_rtc_driver_ids);
+
 static struct platform_driver s3c_rtc_driver = {
 	.probe		= s3c_rtc_probe,
 	.remove		= s3c_rtc_remove,
+	.id_table       = s3c_rtc_driver_ids,
 	.driver		= {
 		.name	= "s3c-rtc",
 		.pm	= &s3c_rtc_pm_ops,

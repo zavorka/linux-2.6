@@ -142,7 +142,7 @@
 	bus-width = <8>;
 	non-removable;
 	cap-mmc-hw-reset;
-	status = "okay";
+	status = "disabled";
 };
 
 &ohci0 {
@@ -192,6 +192,14 @@
 };
 
 #include "axp803.dtsi"
+
+&ac_power_supply {
+	status = "okay";
+};
+
+&battery_power_supply {
+	status = "okay";
+};
 
 &reg_aldo1 {
 	regulator-min-microvolt = <2800000>;

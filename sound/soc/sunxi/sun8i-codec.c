@@ -51,6 +51,7 @@
 #define SUN8I_AIF1CLK_CTRL_AIF1_BCLK_DIV		9
 #define SUN8I_AIF1CLK_CTRL_AIF1_LRCK_DIV		6
 #define SUN8I_AIF1CLK_CTRL_AIF1_LRCK_DIV_16		(1 << 6)
+#define SUN8I_AIF1CLK_CTRL_AIF1_LRCK_DIV_64		(2 << 6)
 #define SUN8I_AIF1CLK_CTRL_AIF1_WORD_SIZ		4
 #define SUN8I_AIF1CLK_CTRL_AIF1_WORD_SIZ_16		(1 << 4)
 #define SUN8I_AIF1CLK_CTRL_AIF1_DATA_FMT		2
@@ -170,35 +171,45 @@ static int sun8i_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	struct sun8i_codec *scodec = snd_soc_codec_get_drvdata(dai->codec);
 	u32 value;
 
+	printk("%s %d\n", __func__, __LINE__);
+
 	/* clock masters */
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBS_CFS: /* DAI Slave */
+		printk("%s %d\n", __func__, __LINE__);
 		value = 0x0; /* Codec Master */
 		break;
 	case SND_SOC_DAIFMT_CBM_CFM: /* DAI Master */
+		printk("%s %d\n", __func__, __LINE__);
 		value = 0x1; /* Codec Slave */
 		break;
 	default:
 		return -EINVAL;
 	}
+	printk("%s %d\n", __func__, __LINE__);
 	regmap_update_bits(scodec->regmap, SUN8I_AIF1CLK_CTRL,
 			   BIT(SUN8I_AIF1CLK_CTRL_AIF1_MSTR_MOD),
 			   value << SUN8I_AIF1CLK_CTRL_AIF1_MSTR_MOD);
+	printk("%s %d\n", __func__, __LINE__);
 
 	/* clock inversion */
 	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
 	case SND_SOC_DAIFMT_NB_NF: /* Normal */
+		printk("%s %d\n", __func__, __LINE__);
 		value = 0x0;
 		break;
 	case SND_SOC_DAIFMT_IB_IF: /* Inversion */
+		printk("%s %d\n", __func__, __LINE__);
 		value = 0x1;
 		break;
 	default:
 		return -EINVAL;
 	}
+	printk("%s %d\n", __func__, __LINE__);
 	regmap_update_bits(scodec->regmap, SUN8I_AIF1CLK_CTRL,
 			   BIT(SUN8I_AIF1CLK_CTRL_AIF1_BCLK_INV),
 			   value << SUN8I_AIF1CLK_CTRL_AIF1_BCLK_INV);
+	printk("%s %d\n", __func__, __LINE__);
 	regmap_update_bits(scodec->regmap, SUN8I_AIF1CLK_CTRL,
 			   BIT(SUN8I_AIF1CLK_CTRL_AIF1_LRCK_INV),
 			   value << SUN8I_AIF1CLK_CTRL_AIF1_LRCK_INV);
@@ -206,24 +217,30 @@ static int sun8i_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	/* DAI format */
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_I2S:
+		printk("%s %d\n", __func__, __LINE__);
 		value = 0x0;
 		break;
 	case SND_SOC_DAIFMT_LEFT_J:
+		printk("%s %d\n", __func__, __LINE__);
 		value = 0x1;
 		break;
 	case SND_SOC_DAIFMT_RIGHT_J:
+		printk("%s %d\n", __func__, __LINE__);
 		value = 0x2;
 		break;
 	case SND_SOC_DAIFMT_DSP_A:
 	case SND_SOC_DAIFMT_DSP_B:
+		printk("%s %d\n", __func__, __LINE__);
 		value = 0x3;
 		break;
 	default:
 		return -EINVAL;
 	}
+	printk("%s %d\n", __func__, __LINE__);
 	regmap_update_bits(scodec->regmap, SUN8I_AIF1CLK_CTRL,
 			   BIT(SUN8I_AIF1CLK_CTRL_AIF1_DATA_FMT),
 			   value << SUN8I_AIF1CLK_CTRL_AIF1_DATA_FMT);
+	printk("%s %d\n", __func__, __LINE__);
 
 	return 0;
 }
@@ -235,6 +252,7 @@ static int sun8i_codec_hw_params(struct snd_pcm_substream *substream,
 	struct sun8i_codec *scodec = snd_soc_codec_get_drvdata(dai->codec);
 	int sample_rate;
 
+	printk("%s %d\n", __func__, __LINE__);
 	/*
 	 * The CPU DAI handles only a sample of 16 bits. Configure the
 	 * codec to handle this type of sample resolution.
@@ -243,17 +261,20 @@ static int sun8i_codec_hw_params(struct snd_pcm_substream *substream,
 			   SUN8I_AIF1CLK_CTRL_AIF1_WORD_SIZ_MASK,
 			   SUN8I_AIF1CLK_CTRL_AIF1_WORD_SIZ_16);
 
+	printk("%s %d\n", __func__, __LINE__);
 	regmap_update_bits(scodec->regmap, SUN8I_AIF1CLK_CTRL,
 			   SUN8I_AIF1CLK_CTRL_AIF1_LRCK_DIV_MASK,
-			   SUN8I_AIF1CLK_CTRL_AIF1_LRCK_DIV_16);
+			   SUN8I_AIF1CLK_CTRL_AIF1_LRCK_DIV_64); /* FIXME? */
 
 	sample_rate = sun8i_codec_get_hw_rate(params);
 	if (sample_rate < 0)
 		return sample_rate;
 
+	printk("%s %d\n", __func__, __LINE__);
 	regmap_update_bits(scodec->regmap, SUN8I_SYS_SR_CTRL,
 			   SUN8I_SYS_SR_CTRL_AIF1_FS_MASK,
 			   sample_rate << SUN8I_SYS_SR_CTRL_AIF1_FS);
+	printk("%s %d\n", __func__, __LINE__);
 	regmap_update_bits(scodec->regmap, SUN8I_SYS_SR_CTRL,
 			   SUN8I_SYS_SR_CTRL_AIF2_FS_MASK,
 			   sample_rate << SUN8I_SYS_SR_CTRL_AIF2_FS);
@@ -433,12 +454,14 @@ static int sun8i_codec_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Failed to get the module clock\n");
 		return PTR_ERR(scodec->clk_module);
 	}
+	clk_prepare_enable(scodec->clk_module);
 
 	scodec->clk_bus = devm_clk_get(&pdev->dev, "bus");
 	if (IS_ERR(scodec->clk_bus)) {
 		dev_err(&pdev->dev, "Failed to get the bus clock\n");
 		return PTR_ERR(scodec->clk_bus);
 	}
+	clk_prepare_enable(scodec->clk_bus);
 
 	res_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	base = devm_ioremap_resource(&pdev->dev, res_base);

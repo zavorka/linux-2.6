@@ -590,7 +590,6 @@ static enum drm_connector_status anx6345_detect(struct drm_connector *connector,
 }
 
 static const struct drm_connector_funcs anx6345_connector_funcs = {
-	.dpms = drm_atomic_helper_connector_dpms,
 	.fill_modes = drm_helper_probe_single_connector_modes,
 	.detect = anx6345_detect,
 	.destroy = drm_connector_cleanup,

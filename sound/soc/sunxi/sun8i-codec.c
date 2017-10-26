@@ -177,11 +177,11 @@ static int sun8i_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
 	case SND_SOC_DAIFMT_CBS_CFS: /* DAI Slave */
 		printk("%s %d\n", __func__, __LINE__);
-		value = 0x0; /* Codec Master */
+		value = 0x1; /* Codec Slave */
 		break;
 	case SND_SOC_DAIFMT_CBM_CFM: /* DAI Master */
 		printk("%s %d\n", __func__, __LINE__);
-		value = 0x1; /* Codec Slave */
+		value = 0x0; /* Codec Master */
 		break;
 	default:
 		return -EINVAL;

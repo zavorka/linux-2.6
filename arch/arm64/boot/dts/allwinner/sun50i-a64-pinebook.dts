@@ -94,6 +94,14 @@
 	};
 };
 
+&codec {
+       status = "okay";
+};
+
+&dai {
+       status = "okay";
+};
+
 &ehci0 {
 	status = "okay";
 };
@@ -328,6 +336,10 @@
 		reg = <0>;
 		remote-endpoint = <&anx6345_in>;
 	};
+};
+
+&sound {
+       status = "okay";
 };
 
 &uart0 {

@@ -196,7 +196,7 @@
 };
 
 &reg_dc1sw {
-	regulator-name = "vcc-phy";
+	regulator-name = "phy";
 };
 
 &reg_dcdc1 {

@@ -164,7 +164,7 @@ struct lima_vm *lima_vm_create(struct lima_device *dev)
 		return NULL;
 
 	vm->dev = dev;
-	vm->va = RB_ROOT;
+	vm->va = RB_ROOT_CACHED;
 	mutex_init(&vm->lock);
 	kref_init(&vm->refcount);
 
@@ -195,11 +195,11 @@ void lima_vm_release(struct kref *kref)
 		}
 	}
 
-	if (!RB_EMPTY_ROOT(&vm->va)) {
+	if (!RB_EMPTY_ROOT(&vm->va.rb_root)) {
 		dev_err(vm->dev->dev, "still active bo inside vm\n");
 	}
 
-	rbtree_postorder_for_each_entry_safe(it, tmp, &vm->va, rb) {
+	rbtree_postorder_for_each_entry_safe(it, tmp, &vm->va.rb_root , rb) {
 		interval_tree_remove(it, &vm->va);
 		kfree(it);
 	}

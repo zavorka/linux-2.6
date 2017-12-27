@@ -1,6 +1,9 @@
 /*
  * Copyright (c) 2017, Jernej Skrabec <jernej.skrabec@siol.net>
  *
+ * Based on hdmi_bsp_sun8iw7.c which is:
+ * Copyright (c) 2016 Allwinnertech Co., Ltd.
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -43,12 +46,15 @@
 #define SUN8I_HDMI_PHY_REG_STATUS_READY		BIT(7)
 #define SUN8I_HDMI_PHY_REG_STATUS_HPD		BIT(19)
 
+#define SUN8I_HDMI_PHY_REG_CEC		0x003c
+
 #define to_sun8i_dw_hdmi(x)	container_of(x, struct sun8i_dw_hdmi, x)
 #define set_bits(p, v)		writel(readl(p) | (v), p)
 
 struct sun8i_dw_hdmi {
+	struct clk *clk_ahb;
 	struct clk *clk_ddc;
-	struct clk *clk_hdmi;
+	struct clk *clk_sfr;
 	struct device *dev;
 	struct drm_encoder encoder;
 	void __iomem *phy_base;
@@ -61,9 +67,9 @@ struct sun8i_dw_hdmi {
 static u32 sun8i_dw_hdmi_get_divider(int clk_khz)
 {
 	/*
-	 * Due to missing documentaion of HDMI PHY, we know correct
+	 * Due to missing documentation of HDMI PHY, we know correct
 	 * settings only for following four PHY dividers. Select one
-	 * based on clock speed.
+	 * based on pixel clock.
 	 */
 	if (clk_khz <= 27000)
 		return 11;
@@ -75,32 +81,23 @@ static u32 sun8i_dw_hdmi_get_divider(int clk_khz)
 		return 1;
 }
 
-static void sun8i_dw_hdmi_encoder_disable(struct drm_encoder *encoder)
-{
-
-	DRM_DEBUG_DRIVER("Disabling HDMI Output\n");
-}
-
-static void sun8i_dw_hdmi_encoder_enable(struct drm_encoder *encoder)
-{
-	DRM_DEBUG_DRIVER("Enabling HDMI Output\n");
-}
-
 static void sun8i_dw_hdmi_encoder_mode_set(struct drm_encoder *encoder,
 					   struct drm_display_mode *mode,
 					   struct drm_display_mode *adj_mode)
 {
 	struct sun8i_dw_hdmi *hdmi = to_sun8i_dw_hdmi(encoder);
+	struct sun4i_crtc *crtc = drm_crtc_to_sun4i_crtc(encoder->crtc);
+	struct sun4i_tcon *tcon = crtc->tcon;
 	u32 div;
 
 	div = sun8i_dw_hdmi_get_divider(mode->crtc_clock);
-	clk_set_rate(hdmi->clk_hdmi, mode->crtc_clock * 1000 * div);
+	clk_set_rate(hdmi->clk_sfr, mode->crtc_clock * 1000 * div);
+	clk_set_rate(tcon->sclk1, mode->crtc_clock * 1000);
 }
 
-static const struct drm_encoder_helper_funcs sun8i_dw_hdmi_encoder_helper_funcs = {
+static const struct drm_encoder_helper_funcs
+				sun8i_dw_hdmi_encoder_helper_funcs = {
 	.mode_set = sun8i_dw_hdmi_encoder_mode_set,
-	.enable   = sun8i_dw_hdmi_encoder_enable,
-	.disable  = sun8i_dw_hdmi_encoder_disable,
 };
 
 static int sun8i_dw_hdmi_phy_init(struct dw_hdmi *hdmi_data, void *data,
@@ -122,10 +119,10 @@ static int sun8i_dw_hdmi_phy_init(struct dw_hdmi *hdmi_data, void *data,
 	case 1:
 		writel(0x30dc5fc0, hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL);
 		writel(0x800863C0, hdmi->phy_base + SUN8I_HDMI_PHY_REG_CLK);
-		mdelay(10);
+		usleep_range(10000, 15000);
 		writel(1, hdmi->phy_base + SUN8I_HDMI_PHY_REG_UNK3);
 		set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL, BIT(25));
-		mdelay(200);
+		msleep(200);
 		val = readl(hdmi->phy_base + SUN8I_HDMI_PHY_REG_STATUS);
 		val = (val & 0x1f800) >> 11;
 		set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL,
@@ -134,9 +131,8 @@ static int sun8i_dw_hdmi_phy_init(struct dw_hdmi *hdmi_data, void *data,
 			set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL,
 				 val + 2);
 		else
-			set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL, 
-				 0x3f);
-		mdelay(100);
+			set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL, 0x3f);
+		msleep(100);
 		writel(0x01FFFF7F, hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL);
 		writel(0x8063b000, hdmi->phy_base + SUN8I_HDMI_PHY_REG_UNK1);
 		writel(0x0F8246B5, hdmi->phy_base + SUN8I_HDMI_PHY_REG_UNK2);
@@ -144,10 +140,10 @@ static int sun8i_dw_hdmi_phy_init(struct dw_hdmi *hdmi_data, void *data,
 	case 2:
 		writel(0x39dc5040, hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL);
 		writel(0x80084381, hdmi->phy_base + SUN8I_HDMI_PHY_REG_CLK);
-		mdelay(10);
+		usleep_range(10000, 15000);
 		writel(1, hdmi->phy_base + SUN8I_HDMI_PHY_REG_UNK3);
 		set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL, BIT(25));
-		mdelay(100);
+		msleep(100);
 		val = readl(hdmi->phy_base + SUN8I_HDMI_PHY_REG_STATUS);
 		val = (val & 0x1f800) >> 11;
 		set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL,
@@ -160,10 +156,10 @@ static int sun8i_dw_hdmi_phy_init(struct dw_hdmi *hdmi_data, void *data,
 	case 4:
 		writel(0x39dc5040, hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL);
 		writel(0x80084343, hdmi->phy_base + SUN8I_HDMI_PHY_REG_CLK);
-		mdelay(10);
+		usleep_range(10000, 15000);
 		writel(1, hdmi->phy_base + SUN8I_HDMI_PHY_REG_UNK3);
 		set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL, BIT(25));
-		mdelay(100);
+		msleep(100);
 		val = readl(hdmi->phy_base + SUN8I_HDMI_PHY_REG_STATUS);
 		val = (val & 0x1f800) >> 11;
 		set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL,
@@ -176,10 +172,10 @@ static int sun8i_dw_hdmi_phy_init(struct dw_hdmi *hdmi_data, void *data,
 	case 11:
 		writel(0x39dc5040, hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL);
 		writel(0x8008430a, hdmi->phy_base + SUN8I_HDMI_PHY_REG_CLK);
-		mdelay(10);
+		usleep_range(10000, 15000);
 		writel(1, hdmi->phy_base + SUN8I_HDMI_PHY_REG_UNK3);
 		set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL, BIT(25));
-		mdelay(100);
+		msleep(100);
 		val = readl(hdmi->phy_base + SUN8I_HDMI_PHY_REG_STATUS);
 		val = (val & 0x1f800) >> 11;
 		set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL,
@@ -191,15 +187,22 @@ static int sun8i_dw_hdmi_phy_init(struct dw_hdmi *hdmi_data, void *data,
 		break;
 	}
 
+	/* clear polarity bits */
+	val = readl(hdmi->phy_base + SUN8I_HDMI_PHY_REG_POL);
+	val &= ~0x300;
+
 	/*
-	 * Condition in original code is a bit weird. This is attempt
-	 * to make it more reasonable and it works. It could be that
-	 * bits and conditions are related and should be separated.
+	 * Set polarity bits if necessary. Condition in original code
+	 * is a bit weird. This is attempt to make it more reasonable
+	 * and it works. It could be that bits and conditions are
+	 * related and should be separated.
 	 */
-	if (!((mode->flags & DRM_MODE_FLAG_PHSYNC) &&
-	      (mode->flags & DRM_MODE_FLAG_PVSYNC))) {
-		set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_POL, 0x300);
+	if (!(mode->flags & DRM_MODE_FLAG_PHSYNC) ||
+	    !(mode->flags & DRM_MODE_FLAG_PVSYNC)) {
+		val |= 0x300;
 	}
+
+	writel(val, hdmi->phy_base + SUN8I_HDMI_PHY_REG_POL);
 
 	return 0;
 }
@@ -208,17 +211,19 @@ static void sun8i_dw_hdmi_phy_disable(struct dw_hdmi *hdmi_data, void *data)
 {
 	struct sun8i_dw_hdmi *hdmi = (struct sun8i_dw_hdmi *)data;
 
+	/* Disable output and stop PLL */
 	writel(7, hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL);
 	writel(0, hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL);
 }
 
-static enum drm_connector_status sun8i_dw_hdmi_phy_read_hpd(struct dw_hdmi *hdmi_data,
-							    void *data)
+static enum drm_connector_status
+			sun8i_dw_hdmi_phy_read_hpd(struct dw_hdmi *hdmi_data,
+						   void *data)
 {
 	struct sun8i_dw_hdmi *hdmi = (struct sun8i_dw_hdmi *)data;
 	u32 reg_val = readl(hdmi->phy_base + SUN8I_HDMI_PHY_REG_STATUS);
 
-	return !!(reg_val & SUN8I_HDMI_PHY_REG_STATUS_HPD) ?
+	return (reg_val & SUN8I_HDMI_PHY_REG_STATUS_HPD) ?
 		connector_status_connected : connector_status_disconnected;
 }
 
@@ -228,9 +233,8 @@ static const struct dw_hdmi_phy_ops sun8i_dw_hdmi_phy_ops = {
 	.read_hpd = &sun8i_dw_hdmi_phy_read_hpd,
 };
 
-static void sun8i_dw_hdmi_pre_init(void *data)
+static void sun8i_dw_hdmi_init(struct sun8i_dw_hdmi *hdmi)
 {
-	struct sun8i_dw_hdmi *hdmi = (struct sun8i_dw_hdmi *)data;
 	u32 timeout = 20;
 	u32 val;
 
@@ -243,13 +247,13 @@ static void sun8i_dw_hdmi_pre_init(void *data)
 	udelay(5);
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL, BIT(16));
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL, BIT(1));
-	udelay(10);
+	usleep_range(10, 20);
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL, BIT(2));
 	udelay(5);
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL, BIT(3));
-	udelay(40);
+	usleep_range(40, 100);
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL, BIT(19));
-	udelay(100);
+	usleep_range(100, 200);
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL, BIT(18));
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL, 7 << 4);
 
@@ -260,7 +264,7 @@ static void sun8i_dw_hdmi_pre_init(void *data)
 			dev_warn(hdmi->dev, "HDMI PHY init timeout!\n");
 			break;
 		}
-		udelay(100);
+		usleep_range(100, 200);
 	}
 
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_CTRL, 0xf << 8);
@@ -268,10 +272,10 @@ static void sun8i_dw_hdmi_pre_init(void *data)
 
 	writel(0x39dc5040, hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL);
 	writel(0x80084343, hdmi->phy_base + SUN8I_HDMI_PHY_REG_CLK);
-	mdelay(10);
+	usleep_range(10000, 15000);
 	writel(1, hdmi->phy_base + SUN8I_HDMI_PHY_REG_UNK3);
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL, BIT(25));
-	mdelay(100);
+	msleep(100);
 	val = readl(hdmi->phy_base + SUN8I_HDMI_PHY_REG_STATUS);
 	val = (val & 0x1f800) >> 11;
 	set_bits(hdmi->phy_base + SUN8I_HDMI_PHY_REG_PLL, BIT(31) | BIT(30));
@@ -284,9 +288,12 @@ static void sun8i_dw_hdmi_pre_init(void *data)
 	writel(SUN8I_HDMI_PHY_REG_READ_EN_MAGIC,
 	       hdmi->phy_base + SUN8I_HDMI_PHY_REG_READ_EN);
 
-	/* descramble register offsets */
+	/* unscramble register offsets */
 	writel(SUN8I_HDMI_PHY_REG_UNSCRAMBLE_MAGIC,
 	       hdmi->phy_base + SUN8I_HDMI_PHY_REG_UNSCRAMBLE);
+
+	/* Reset PHY CEC settings. This gives dw hdmi total control over CEC. */
+	writel(0, hdmi->phy_base + SUN8I_HDMI_PHY_REG_CEC);
 }
 
 static const struct drm_encoder_funcs sun8i_dw_hdmi_encoder_funcs = {
@@ -315,8 +322,7 @@ static int sun8i_dw_hdmi_bind(struct device *dev, struct device *master,
 	hdmi->dev = &pdev->dev;
 	encoder = &hdmi->encoder;
 
-	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm,
-							     dev->of_node);
+	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm, dev->of_node);
 	/*
 	 * If we failed to find the CRTC(s) which this encoder is
 	 * supposed to be connected to, it's because the CRTC has
@@ -338,13 +344,19 @@ static int sun8i_dw_hdmi_bind(struct device *dev, struct device *master,
 		return PTR_ERR(hdmi->vcc_hdmi);
 	}
 
-	hdmi->clk_hdmi = devm_clk_get(dev, "isfr");
-	if (IS_ERR(hdmi->clk_hdmi)) {
-		dev_err(dev, "Could not get hdmi clock\n");
-		return PTR_ERR(hdmi->clk_hdmi);
+	hdmi->clk_ahb = devm_clk_get(dev, "iahb");
+	if (IS_ERR(hdmi->clk_ahb)) {
+		dev_err(dev, "Could not get iahb clock\n");
+		return PTR_ERR(hdmi->clk_ahb);
 	}
 
-	hdmi->clk_ddc = devm_clk_get(dev, "iddc");
+	hdmi->clk_sfr = devm_clk_get(dev, "isfr");
+	if (IS_ERR(hdmi->clk_sfr)) {
+		dev_err(dev, "Could not get isfr clock\n");
+		return PTR_ERR(hdmi->clk_sfr);
+	}
+
+	hdmi->clk_ddc = devm_clk_get(dev, "ddc");
 	if (IS_ERR(hdmi->clk_ddc)) {
 		dev_err(dev, "Could not get ddc clock\n");
 		return PTR_ERR(hdmi->clk_ddc);
@@ -358,7 +370,7 @@ static int sun8i_dw_hdmi_bind(struct device *dev, struct device *master,
 
 	hdmi->rst_ddc = devm_reset_control_get(dev, "ddc");
 	if (IS_ERR(hdmi->rst_ddc)) {
-		dev_err(dev, "Could not get dw-hdmi reset control\n");
+		dev_err(dev, "Could not get ddc reset control\n");
 		return PTR_ERR(hdmi->rst_ddc);
 	}
 
@@ -368,10 +380,22 @@ static int sun8i_dw_hdmi_bind(struct device *dev, struct device *master,
 		return ret;
 	}
 
+	ret = clk_prepare_enable(hdmi->clk_ahb);
+	if (ret) {
+		dev_err(dev, "Cannot enable ahb clock: %d\n", ret);
+		goto err_disable_vcc;
+	}
+
+	ret = clk_prepare_enable(hdmi->clk_sfr);
+	if (ret) {
+		dev_err(dev, "Cannot enable isfr clock: %d\n", ret);
+		goto err_ahb_clk;
+	}
+
 	ret = clk_prepare_enable(hdmi->clk_ddc);
 	if (ret) {
-		dev_err(dev, "Cannot enable DDC clock: %d\n", ret);
-		goto err_disable_vcc;
+		dev_err(dev, "Cannot enable ddc clock: %d\n", ret);
+		goto err_sfr_clk;
 	}
 
 	ret = reset_control_deassert(hdmi->rst_hdmi);
@@ -390,8 +414,8 @@ static int sun8i_dw_hdmi_bind(struct device *dev, struct device *master,
 	drm_encoder_init(drm, encoder, &sun8i_dw_hdmi_encoder_funcs,
 			 DRM_MODE_ENCODER_TMDS, NULL);
 
-	plat_data->pre_init = &sun8i_dw_hdmi_pre_init,
-	plat_data->pre_init_data = hdmi;
+	sun8i_dw_hdmi_init(hdmi);
+
 	plat_data->phy_ops = &sun8i_dw_hdmi_phy_ops,
 	plat_data->phy_name = "sun8i_dw_hdmi_phy",
 	plat_data->phy_data = hdmi;
@@ -414,6 +438,10 @@ err_assert_hdmi_reset:
 	reset_control_assert(hdmi->rst_hdmi);
 err_ddc_clk:
 	clk_disable_unprepare(hdmi->clk_ddc);
+err_sfr_clk:
+	clk_disable_unprepare(hdmi->clk_sfr);
+err_ahb_clk:
+	clk_disable_unprepare(hdmi->clk_ahb);
 err_disable_vcc:
 	regulator_disable(hdmi->vcc_hdmi);
 
@@ -445,7 +473,7 @@ static int sun8i_dw_hdmi_remove(struct platform_device *pdev)
 
 static const struct of_device_id sun8i_dw_hdmi_dt_ids[] = {
 	{ .compatible = "allwinner,h3-dw-hdmi" },
-	{},
+	{ /* sentinel */ },
 };
 MODULE_DEVICE_TABLE(of, sun8i_dw_hdmi_dt_ids);
 

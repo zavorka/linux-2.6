@@ -832,7 +832,7 @@
 			interrupts = <GIC_SPI 88 IRQ_TYPE_LEVEL_HIGH>;
 			clocks = <&ccu CLK_BUS_HDMI>, <&ccu CLK_HDMI>,
 				 <&ccu CLK_HDMI_DDC>;
-			clock-names = "iahb", "isfr", "iddc";
+			clock-names = "iahb", "isfr", "ddc";
 			resets = <&ccu RST_BUS_HDMI0>, <&ccu RST_BUS_HDMI1>;
 			reset-names = "hdmi", "ddc";
 			status = "disabled";
